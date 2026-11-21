@@ -1,0 +1,71 @@
+{
+  "entities": {
+    "users": {
+      "title": "User Profiles",
+      "description": "Registered Revenue Officers, Amins, and Citizens",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "role": { "type": "string", "enum": ["RI", "AMIN", "TAHASILDAR", "STAFF", "CITIZEN"] },
+        "tahasil": { "type": "string" },
+        "riCircle": { "type": "string" },
+        "phone": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["uid", "email"]
+    },
+    "cases": {
+      "title": "Revenue & Field Cases",
+      "description": "Multi-module revenue cases: Khana-2 correction, Farmer Land Share (PPAS), Legal Heir Certificate Enquiry, and Disaster Management",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "moduleType": { "type": "string", "enum": ["KHANA_2", "FARMER_VERIFICATION", "LEGAL_HEIR_ENQUIRY", "DISASTER_MANAGEMENT", "COLUMN_2_CAMP"] },
+        "status": { "type": "string" },
+        "district": { "type": "string" },
+        "tahasil": { "type": "string" },
+        "mouza": { "type": "string" },
+        "khataNumber": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "caseData": { "type": "object" }
+      },
+      "required": ["id", "userId", "moduleType"]
+    },
+    "disaster_records": {
+      "title": "Disaster Damage & Relief Record",
+      "description": "Field house damage verification, polythene distribution, and relief assistance records",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "slNo": { "type": "number" },
+        "beneficiaryName": { "type": "string" },
+        "village": { "type": "string" },
+        "damageType": { "type": "string" },
+        "polythene": { "type": "string" },
+        "financialAssistance": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "userId"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "users",
+      "description": "User profile documents"
+    },
+    "/users/{userId}/cases/{caseId}": {
+      "schema": "cases",
+      "description": "User specific revenue cases across Khana-2, Farmer PPAS, and Legal Heir"
+    },
+    "/users/{userId}/disaster_records/{recordId}": {
+      "schema": "disaster_records",
+      "description": "User specific disaster damage assessment and relief records"
+    }
+  }
+}

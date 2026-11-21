@@ -1,0 +1,6 @@
+{
+  "name": "Offline Khana-2 Correction Reporting System",
+  "description": "Integrated Odisha Revenue & Field Operations Suite with Firebase Cloud Sync, supporting Offline Khana-2 Corrections, PPAS Farmer Succession, Legal Heir Field Enquiries, and Disaster Management & House Damage Verification with Watermarked Photo Evidence.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

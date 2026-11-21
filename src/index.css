@@ -1,0 +1,136 @@
+@import "tailwindcss";
+
+/* Base screen and export styles for PDF page */
+.pdf-page {
+  background-color: #ffffff !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+#khana2-official-report,
+#column2-camp-annexure2-print {
+  background-color: #ffffff !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm 12mm;
+  }
+
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    width: 100% !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide navigation, headers, footers, buttons, and interactive UI controls */
+  header,
+  footer,
+  nav,
+  button,
+  .no-print,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Universal reset for all outer wrapper tags in print */
+  body, #root, main, .flex-1, .space-y-6, .space-y-4 {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  #khana2-official-report,
+  #column2-camp-annexure2-print {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: #ffffff !important;
+  }
+
+  /* Each section acts as a distinct printed report page that flows naturally */
+  .pdf-page {
+    position: relative !important;
+    width: 100% !important;
+    min-height: auto !important;
+    max-height: none !important;
+    height: auto !important;
+    box-sizing: border-box !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    display: block !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: #ffffff !important;
+  }
+
+  .pdf-page:last-child {
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
+
+  /* Prevent awkward page break cuts inside tables, signature blocks, and genealogy cards */
+  .keep-together,
+  .pdf-page table,
+  .genealogy-card,
+  .signature-block,
+  #column2-camp-annexure2-print tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  #column2-camp-annexure2-print thead {
+    display: table-header-group !important;
+  }
+
+  /* Preserve high-contrast table grid lines, borders and padding in print mode */
+  #khana2-official-report table,
+  #farmer-verification-single-page table,
+  #column2-camp-annexure2-print table {
+    border-collapse: collapse !important;
+    border: 1px solid #1e293b !important;
+    width: 100% !important;
+    margin-top: 4px !important;
+    margin-bottom: 4px !important;
+  }
+
+  #khana2-official-report th,
+  #khana2-official-report td,
+  #farmer-verification-single-page th,
+  #farmer-verification-single-page td,
+  #column2-camp-annexure2-print th,
+  #column2-camp-annexure2-print td {
+    border: 1px solid #334155 !important;
+    padding: 3px 6px !important;
+    color: #0f172a !important;
+  }
+
+  #khana2-official-report th,
+  #farmer-verification-single-page th,
+  #column2-camp-annexure2-print th {
+    background-color: #f1f5f9 !important;
+    font-weight: 700 !important;
+  }
+}
