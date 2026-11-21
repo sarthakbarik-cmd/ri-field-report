@@ -31,10 +31,15 @@ export function parsePastedLetter(text: string): Partial<LetterDraft> {
   return result;
 }
 
-export function letterParagraphs(entry: LetterDraft, number: string, date: string) {
+export const dispatchEmblem = '/assets/dispatch-emblem.png';
+
+export function letterNumberLine(language: LetterDraft['language'], number: string, date: string) {
+  return language === 'or' ? `ପତ୍ର ସଂଖ୍ୟା: ${number}     ତାରିଖ: ${date}` : `Letter No.: ${number}     Date: ${date}`;
+}
+
+export function letterParagraphs(entry: LetterDraft) {
   const odia = entry.language === 'or';
   return [
-    `${odia ? 'ପତ୍ର ସଂଖ୍ୟା' : 'Letter No.'}: ${number}     ${odia ? 'ତାରିଖ' : 'Date'}: ${date}`,
     `${odia ? 'ପ୍ରାପ୍ତେଷୁ' : 'To'}: ${entry.recipient}`,
     `${odia ? 'ବିଷୟ' : 'Subject'}: ${entry.subject}`,
     entry.reference && `${odia ? 'ସୂତ୍ର' : 'Reference'}: ${entry.reference}`,

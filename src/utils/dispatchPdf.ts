@@ -1,10 +1,13 @@
 import { jsPDF } from 'jspdf';
 import '@fontsource/noto-sans-oriya/400.css';
 import type { DispatchEntry } from '../services/dispatchRegister';
-import { issuedLetterLayout, letterParagraphs } from './dispatchLetter';
+import { dispatchEmblem, issuedLetterLayout, letterNumberLine, letterParagraphs } from './dispatchLetter';
 
 export async function renderDispatchPdf(entry: DispatchEntry, signature?: string) {
   await document.fonts.load('24px "Noto Sans Oriya"', 'ରାଜସ୍ୱ');
+  const emblem = new Image();
+  emblem.src = dispatchEmblem;
+  await emblem.decode();
   const canvas = document.createElement('canvas');
   canvas.width = 1190;
   canvas.height = 1684;
@@ -52,6 +55,12 @@ export async function renderDispatchPdf(entry: DispatchEntry, signature?: string
     ctx!.font = '32px "Noto Sans Oriya", sans-serif';
     ctx!.textAlign = 'center';
     y = 105;
+    if (page === 1) {
+      const emblemHeight = 115;
+      const emblemWidth = emblemHeight * emblem.naturalWidth / emblem.naturalHeight;
+      ctx!.drawImage(emblem, (canvas.width - emblemWidth) / 2, 66, emblemWidth, emblemHeight);
+      y = 228;
+    }
     for (const line of lines(layout.header)) {
       ctx!.fillText(line, canvas.width / 2, y);
       y += 43;
@@ -72,7 +81,14 @@ export async function renderDispatchPdf(entry: DispatchEntry, signature?: string
   }
 
   startPage();
-  for (const paragraph of letterParagraphs(entry, String(entry.number), entry.date)) {
+  ctx.textAlign = 'center';
+  for (const line of lines(letterNumberLine(entry.language, String(entry.number), entry.date))) {
+    ctx.fillText(line, canvas.width / 2, y);
+    y += 39;
+  }
+  y += 18;
+  ctx.textAlign = 'left';
+  for (const paragraph of letterParagraphs(entry)) {
     for (const line of lines(paragraph)) {
       if (y > bottom) {
         finishPage();

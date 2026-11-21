@@ -4,7 +4,7 @@ import type { RIProfile } from '../../types';
 import { cancelDispatch, dispatchDate, downloadDispatchPdf, issueDispatch, letterTypes, readDispatchSignature, readIssuedSignature, saveDispatchPdf, saveDispatchSignature, watchDispatch } from '../../services/dispatchRegister';
 import type { DispatchEntry, LetterDraft } from '../../services/dispatchRegister';
 
-import { letterLayout, letterParagraphs, parsePastedLetter } from '../../utils/dispatchLetter';
+import { dispatchEmblem, letterLayout, letterNumberLine, letterParagraphs, parsePastedLetter } from '../../utils/dispatchLetter';
 
 const blank: LetterDraft = { type: 'Other', language: 'en', recipient: '', subject: '', reference: '', deadline: '', body: '', enclosure: '' };
 const fieldClass = 'block w-full rounded border border-slate-300 p-2';
@@ -32,26 +32,34 @@ export function DispatchModule({ profile }: { profile: RIProfile }) {
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
   const [source, setSource] = useState('');
-  const [findings, setFindings] = useState('');
   const [cancelReason, setCancelReason] = useState('');
   const [pasted, setPasted] = useState('');
-  const [signature, setSignature] = useState('');
+  const [signatures, setSignatures] = useState<Partial<Record<LetterDraft['language'], string>>>({});
+  const [signatureChoice, setSignatureChoice] = useState<LetterDraft['language']>();
+  const [confirming, setConfirming] = useState(false);
+  const signatureLanguage = signatureChoice ?? draft.language;
+  const signature = signatures[signatureLanguage];
   const [signatureLoading, setSignatureLoading] = useState(false);
   const uid = user?.uid;
   const office = profile.officeName || profile.riCircle;
   const layout = letterLayout(office, profile.tahasil, profile.district);
 
   useEffect(() => {
-    setSignature('');
     if (!uid) return;
     let active = true;
     setSignatureLoading(true);
-    void readDispatchSignature(uid, draft.language)
-      .then(image => { if (active) setSignature(image ?? ''); })
-      .catch(error => { if (active) setNotice(error.message); })
-      .finally(() => { if (active) setSignatureLoading(false); });
+    void Promise.allSettled([readDispatchSignature(uid, 'en'), readDispatchSignature(uid, 'or')])
+      .then(([english, odia]) => {
+        if (!active) return;
+        setSignatures({ en: english.status === 'fulfilled' ? english.value : undefined,
+          or: odia.status === 'fulfilled' ? odia.value : undefined });
+        if (english.status === 'rejected' || odia.status === 'rejected') {
+          setNotice('Could not load all saved signatures. Check your connection and reload before signing.');
+        }
+        setSignatureLoading(false);
+      });
     return () => { active = false; };
-  }, [uid, draft.language]);
+  }, [uid]);
 
   useEffect(() => {
     setEntries([]);
@@ -81,31 +89,13 @@ export function DispatchModule({ profile }: { profile: RIProfile }) {
     }
   }
 
-  function draftReply() {
-    const template = {
-      'Birth enquiry': ['I submit the following findings regarding the birth registration enquiry.', 'ଜନ୍ମ ପଞ୍ଜୀକରଣ ସମ୍ବନ୍ଧୀୟ ତଦନ୍ତର ତଥ୍ୟ ନିମ୍ନରେ ଦାଖଲ କରୁଛି।'],
-      'Death enquiry': ['I submit the following findings regarding the death registration enquiry.', 'ମୃତ୍ୟୁ ପଞ୍ଜୀକରଣ ସମ୍ବନ୍ଧୀୟ ତଦନ୍ତର ତଥ୍ୟ ନିମ୍ନରେ ଦାଖଲ କରୁଛି।'],
-      'Genealogy': ['I submit the following genealogy details for your consideration.', 'ବଂଶାବଳୀ ସମ୍ବନ୍ଧୀୟ ନିମ୍ନଲିଖିତ ତଥ୍ୟ ବିଚାର ପାଇଁ ଦାଖଲ କରୁଛି।'],
-    };
-    const preface = draft.language === 'or'
-      ? 'ଉପରୋକ୍ତ ବିଷୟ ଓ ସୂତ୍ର ପ୍ରସଙ୍ଗରେ ନିମ୍ନଲିଖିତ ତଥ୍ୟ ଦାଖଲ କରୁଛି।'
-      : 'With reference to the subject cited above, I submit the following for your consideration.';
-    if (draft.type in template && !findings.trim()) {
-      setNotice('Enter the verified findings for this report before preparing the draft.');
-      return;
-    }
-    const selected = draft.type in template ? template[draft.type as keyof typeof template] : undefined;
-    const introduction = selected ? selected[draft.language === 'or' ? 1 : 0] : preface;
-    setDraft(previous => ({ ...previous, body: [introduction, findings.trim()].filter(Boolean).join('\n\n') }));
-  }
-
   async function uploadSignature(file: File) {
     if (!uid || busy || signatureLoading) return;
-    const language = draft.language;
+    const language = signatureLanguage;
     setBusy(true);
     const url = URL.createObjectURL(file);
     try {
-      if (file.type !== 'image/png' || file.size > 10_000_000) throw new Error('Choose a PNG signature under 10 MB.');
+      if ((file.type !== 'image/png' && !/\.png$/i.test(file.name)) || file.size > 10_000_000) throw new Error('Choose a PNG signature under 10 MB.');
       const image = new Image();
       image.src = url;
       await image.decode();
@@ -118,7 +108,7 @@ export function DispatchModule({ profile }: { profile: RIProfile }) {
       ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
       const data = canvas.toDataURL('image/png');
       await saveDispatchSignature(uid, language, data);
-      setSignature(data);
+      setSignatures(previous => ({ ...previous, [language]: data }));
       setNotice(`${language === 'or' ? 'Odia' : 'English'} signature saved privately.`);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Unable to save this signature.');
@@ -135,10 +125,20 @@ export function DispatchModule({ profile }: { profile: RIProfile }) {
     setIssued({ ...row, pdfParts: parts });
   }
 
+  function issueBlocker(sign: boolean) {
+    if (!office) return 'Set the RI office or circle in your profile.';
+    const missing = [!draft.recipient.trim() && 'recipient', !draft.subject.trim() && 'subject', !draft.body.trim() && 'letter body'].filter(Boolean);
+    if (missing.length) return `Complete the ${missing.join(', ')} before issuing.`;
+    if (sign && signatureLoading) return 'Wait for your saved signatures to load.';
+    if (sign && !signature) return 'Choose a saved signature or add it once under Manage signatures.';
+    return '';
+  }
+
   async function issue(sign = false) {
-    if (!uid || busy || !office || !draft.recipient.trim() || !draft.subject.trim() || !draft.body.trim()) return;
+    if (!uid || busy) return;
+    const blocker = issueBlocker(sign);
+    if (blocker) return setNotice(blocker);
     const image = sign ? signature : undefined;
-    if (sign && (signatureLoading || !image || !window.confirm('Apply the displayed signature and issue this official letter?'))) return;
     setBusy(true);
     setNotice('');
     let row: DispatchEntry | undefined;
@@ -150,9 +150,9 @@ export function DispatchModule({ profile }: { profile: RIProfile }) {
       setNotice(`Letter ${row.number} issued. Saving PDF…`);
       setDraft(blank);
       setId(crypto.randomUUID());
-      setFindings('');
       setSource('');
       setPasted('');
+      setConfirming(false);
       if (!row.pdfParts) await archivePdf(uid, row);
       setNotice(`Issued letter ${row.number} on ${row.date}. PDF saved in the register.`);
     } catch (error) {
@@ -182,13 +182,14 @@ export function DispatchModule({ profile }: { profile: RIProfile }) {
   return <section className="mx-auto max-w-5xl space-y-5 p-4">
     <h1 className="text-2xl font-bold">Dispatch &amp; Letters</h1>
     <form className="grid gap-3 rounded-xl bg-white p-4 shadow-sm" onSubmit={event => event.preventDefault()}>
-      <h2 className="text-xl font-semibold">Draft outgoing letter</h2>
-      <label>Paste ChatGPT draft<textarea className={fieldClass} rows={5} value={pasted} disabled={busy} onChange={event => setPasted(event.target.value)} /></label>
-      <button type="button" className={buttonClass + ' justify-self-start'} disabled={busy || !pasted.trim()} onClick={() => {
-        const fields = parsePastedLetter(pasted);
+      <h2 className="text-xl font-semibold">Format and issue a letter</h2>
+      <label>Paste your finished letter<textarea className={fieldClass} rows={5} value={pasted} disabled={busy || confirming} onChange={event => {
+        const text = event.target.value;
+        setPasted(text);
+        const fields = parsePastedLetter(text);
         setDraft(previous => ({ ...previous, ...fields, type: fields.subject ? classify(fields.subject) : previous.type }));
-        setNotice('Review the imported text and select the correct letter type.');
-      }}>Import pasted draft</button>
+        setNotice(text.trim() ? 'Review the detected details below before issuing.' : '');
+      }} /></label>
       <label>Reply to a received PDF<input className={fieldClass} type="file" accept=".pdf,application/pdf" disabled={busy} onChange={event => {
         const file = event.target.files?.[0];
         event.target.value = '';
@@ -205,14 +206,16 @@ export function DispatchModule({ profile }: { profile: RIProfile }) {
         {([['recipient', 'Recipient'], ['subject', 'Subject'], ['reference', 'Incoming memo number and date'], ['deadline', 'Response deadline'], ['enclosure', 'Enclosures']] as const).map(([key, label]) =>
           <label key={key}>{label}<input className={fieldClass} value={draft[key]} required={key === 'recipient' || key === 'subject'} onChange={event => setDraft({ ...draft, [key]: event.target.value })} /></label>)}
       </div>
-      <label>Verified findings or submission details<textarea className={fieldClass} value={findings} onChange={event => setFindings(event.target.value)} /></label>
-      <button type="button" className={buttonClass + ' justify-self-start'} disabled={busy || !!draft.body} onClick={draftReply}>Prepare draft</button>
       <label>Letter body<textarea className={fieldClass} rows={7} value={draft.body} required onChange={event => setDraft({ ...draft, body: event.target.value })} /></label>
       <details>
         <summary>Preview official letter</summary>
         <article className="my-3 space-y-4 rounded border bg-white p-5" lang={draft.language}>
-          <header className="border-b pb-3 text-center text-lg font-semibold">{layout.header}</header>
-          {letterParagraphs(draft, '—', '—').map((paragraph, index) => <p className="whitespace-pre-wrap break-words" key={index}>{paragraph}</p>)}
+          <header className="border-b pb-3 text-center text-lg font-semibold">
+            <img src={dispatchEmblem} alt="Odisha government emblem" className="mx-auto mb-2 h-16 w-auto" />
+            {layout.header}
+          </header>
+          <p className="whitespace-pre-wrap text-center">{letterNumberLine(draft.language, '—', '—')}</p>
+          {letterParagraphs(draft).map((paragraph, index) => <p className="whitespace-pre-wrap break-words" key={index}>{paragraph}</p>)}
           <div className="flex flex-col items-end">
             {signature && !signatureLoading && <img className="max-h-24 max-w-44 object-contain" src={signature} alt="Saved signature for this language" />}
             <p>{profile.riName || 'Revenue Inspector'}</p>
@@ -224,21 +227,39 @@ export function DispatchModule({ profile }: { profile: RIProfile }) {
         {(!entries.length || year !== currentYear) && <label>Last paper dispatch number for {currentYear}, or 0 for a new series<input className={fieldClass} type="number" min="0" step="1" value={paper} onChange={event => setPaper(event.target.value)} /></label>}
         <p>Check the letter before issuing. The register assigns its official number and date.</p>
         {!office && <p>Set the RI office or circle in your profile to issue letters.</p>}
-        <label>{draft.language === 'or' ? 'Odia' : 'English'} signature PNG
-          <input className={fieldClass} type="file" accept="image/png" disabled={busy || signatureLoading} onChange={event => {
-            const file = event.target.files?.[0];
-            event.target.value = '';
-            if (file) void uploadSignature(file);
-          }} />
-        </label>
-        {signature && !signatureLoading && <img className="max-h-24 max-w-44 object-contain" src={signature} alt="Signature that will be applied when you sign" />}
-        <div className="flex flex-wrap gap-2">
-          <button type="button" className={buttonClass} disabled={busy || !office || !draft.recipient.trim() || !draft.subject.trim() || !draft.body.trim()} onClick={() => void issue()}>Issue unsigned</button>
-          <button type="button" className={buttonClass} disabled={busy || signatureLoading || !signature || !office || !draft.recipient.trim() || !draft.subject.trim() || !draft.body.trim()} onClick={() => void issue(true)}>Sign &amp; issue</button>
-        </div>
+        <label>Signature<select className={fieldClass} disabled={busy || confirming} value={signatureLanguage}
+          onChange={event => setSignatureChoice(event.target.value as LetterDraft['language'])}>
+          <option value="en">English{signatures.en ? ' (saved)' : ''}</option>
+          <option value="or">Odia{signatures.or ? ' (saved)' : ''}</option>
+        </select></label>
+        {signature && !signatureLoading && <img className="max-h-24 max-w-44 object-contain" src={signature} alt="Signature selected for this letter" />}
+        <details>
+          <summary>Manage signatures</summary>
+          <label className="block pt-2">{signatureLanguage === 'or' ? 'Odia' : 'English'} signature PNG
+            <input className={fieldClass} type="file" accept="image/png,.png" disabled={busy || confirming || signatureLoading} onChange={event => {
+              const file = event.target.files?.[0];
+              event.target.value = '';
+              if (file) void uploadSignature(file);
+            }} />
+          </label>
+        </details>
+        {confirming ? <div className="space-y-2 rounded border border-indigo-200 bg-indigo-50 p-3">
+          <p>Apply the selected signature and assign the next official dispatch number?</p>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className={buttonClass} disabled={busy} onClick={() => void issue(true)}>Confirm signing and issue</button>
+            <button type="button" className="rounded border px-3 py-2" disabled={busy} onClick={() => setConfirming(false)}>Back to review</button>
+          </div>
+        </div> : <div className="flex flex-wrap gap-2">
+          <button type="button" className={buttonClass} disabled={busy} onClick={() => void issue()}>Issue unsigned</button>
+          <button type="button" className={buttonClass} disabled={busy} onClick={() => {
+            const blocker = issueBlocker(true);
+            if (blocker) setNotice(blocker);
+            else { setNotice(''); setConfirming(true); }
+          }}>Sign &amp; issue</button>
+        </div>}
       </> : <button type="button" className={buttonClass + ' justify-self-start'} onClick={() => void login().catch(error => setNotice(error.message))}>Sign in with Google to issue</button>}
+      <p role="status" className="text-sm text-slate-700">{notice}</p>
     </form>
-    <p role="status">{notice}</p>
     {issued && <section className="space-y-2 rounded-xl bg-white p-4 shadow-sm">
       <h2 className="font-semibold">Letter {issued.number} · {issued.date}</h2><p>{issued.subject}</p>
       {issued.signedAt && <p>Signed {new Date(issued.signedAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST</p>}
