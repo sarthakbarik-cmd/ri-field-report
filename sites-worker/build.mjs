@@ -10,6 +10,8 @@ const types = {
   '.ico': 'image/x-icon',
   '.jpg': 'image/jpeg',
   '.mjs': 'text/javascript; charset=utf-8',
+  '.woff2': 'font/woff2',
+  '.woff': 'font/woff',
   '.js': 'text/javascript; charset=utf-8',
 };
 const clientDir = 'dist/client';
