@@ -296,7 +296,7 @@ export default function App() {
         )}
 
         {/* COLUMN 2 CAMP: ANNEXURE-II FIELD COLLECTION & SIGNATURES */}
-        {activeModule === 'DISPATCH' && <DispatchModule key={user?.uid || 'guest'} profile={riProfile} />}
+        {activeModule === 'DISPATCH' && <div key={user?.uid || 'guest'}><DispatchModule profile={riProfile} /></div>}
 
         {activeModule === 'COLUMN_2_CAMP' && (
           <Column2CampModule
