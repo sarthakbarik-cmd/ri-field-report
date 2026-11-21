@@ -279,6 +279,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
             
+            <button
+              type="button"
+              onClick={() => onSelectModule('DISPATCH')}
+              className="flex flex-col items-start gap-4 rounded-2xl border-2 border-indigo-200 bg-white p-5 text-left shadow-sm transition hover:border-indigo-500 hover:shadow-md sm:p-6"
+            >
+              <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700">
+                <FileText aria-hidden="true" className="h-6 w-6" />
+              </span>
+              <span className="text-lg font-bold text-slate-900">Dispatch &amp; Letters</span>
+              <span className="text-sm text-slate-600">Draft letters, reply to received memos, and view the annual dispatch register.</span>
+            </button>
+
             {/* CARD 1: KHANA-2 (COLUMN 2) */}
             <div
               onClick={() => onSelectModule('KHANA_2')}

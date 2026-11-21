@@ -31,7 +31,7 @@ import { ArrowLeft, Printer } from 'lucide-react';
 
 export default function App() {
   const { user } = useAuth();
-  const [activeModule, setActiveModule] = useState<ModuleType>('HOME');
+  const [activeModule, setActiveModule] = useState<ModuleType>(() => window.location.hash === '#dispatch' ? 'DISPATCH' : 'HOME');
   const [cases, setCases] = useState<CaseData[]>([]);
   const [activeCase, setActiveCase] = useState<CaseData | null>(null);
   const [currentView, setCurrentView] = useState<'dashboard' | 'workflow' | 'report'>('dashboard');
@@ -150,6 +150,11 @@ export default function App() {
   };
 
   const handleSelectModule = (mod: ModuleType) => {
+    if (mod === 'DISPATCH' || window.location.hash === '#dispatch') {
+      const url = new URL(window.location.href);
+      url.hash = mod === 'DISPATCH' ? 'dispatch' : '';
+      window.history.replaceState(null, '', url);
+    }
     setActiveModule(mod);
     setCurrentView('dashboard');
   };
