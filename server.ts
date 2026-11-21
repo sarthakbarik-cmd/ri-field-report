@@ -10,7 +10,12 @@ import { createSampleRORPdf } from './sites-worker/sample-ror';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.NODE_ENV === 'production' ? Number(process.env.PORT) || 3000 : 3000;
+function readServerOption(name: string) {
+  const index = process.argv.indexOf(name);
+  return index === -1 ? undefined : process.argv[index + 1];
+}
+const PORT = Number(readServerOption('--port') || process.env.PORT) || 3000;
+const HOST = readServerOption('--host') || '0.0.0.0';
 
 // Configurable Gemini model alias or name
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
@@ -208,7 +213,7 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
+  app.listen(PORT, HOST, () => {
     console.log(`Offline Khana-2 Correction Reporting System backend listening on http://0.0.0.0:${PORT}`);
   });
 }
