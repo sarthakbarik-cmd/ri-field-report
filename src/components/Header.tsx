@@ -55,6 +55,8 @@ export const Header: React.FC<HeaderProps> = ({
         return language === 'or' ? 'ମୁଖ୍ୟ ପୃଷ୍ଠା (Dashboard)' : 'Home Portal';
       case 'KHANA_2':
         return language === 'or' ? 'ଖାନା-୨ ସଂଶୋଧନ' : 'Khana-2 Correction';
+      case 'DISPATCH':
+        return 'Dispatch & Letters';
       case 'COLUMN_2_CAMP':
         return language === 'or' ? 'ଖାନା-୨ କ୍ୟାମ୍ପ (Annexure-II)' : 'Column 2 Camp (Annexure-II)';
       case 'FARMER_VERIFICATION':
@@ -128,6 +130,10 @@ export const Header: React.FC<HeaderProps> = ({
                 {activeModule === 'COLUMN_2_CAMP' && <span className="w-2 h-2 rounded-full bg-indigo-600"></span>}
               </button>
 
+              <button type="button" onClick={() => { onSelectModule('DISPATCH'); setShowModuleMenu(false); }}
+                className="flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-indigo-50">
+                Dispatch &amp; Letters
+              </button>
               <button
                 onClick={() => {
                   onSelectModule('FARMER_VERIFICATION');

@@ -9,7 +9,8 @@ export type ModuleType =
   | 'FARMER_VERIFICATION'
   | 'LEGAL_HEIR_ENQUIRY'
   | 'DISASTER_MANAGEMENT'
-  | 'COLUMN_2_CAMP';
+  | 'COLUMN_2_CAMP'
+  | 'DISPATCH';
 
 export interface UserProfile {
   uid: string;

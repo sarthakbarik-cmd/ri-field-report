@@ -5,7 +5,7 @@ import { parseRorText } from './rorText';
 
 GlobalWorkerOptions.workerSrc = workerUrl;
 
-export async function extractRorPdf(file: File, progress?: (message: string) => void) {
+export async function readPdfPages(file: File, progress?: (message: string) => void) {
   if (file.size > 20 * 1024 * 1024) throw new Error('Choose a PDF smaller than 20 MB.');
   const loading = getDocument({ data: await file.arrayBuffer(), isEvalSupported: false, useWasm: false });
   let ocr: Awaited<ReturnType<typeof import('tesseract.js')['createWorker']>> | undefined;
@@ -38,12 +38,17 @@ export async function extractRorPdf(file: File, progress?: (message: string) => 
       pages.push(text);
       page.cleanup();
     }
+    return pages;
+  } finally {
+    await Promise.allSettled([ocr?.terminate(), loading.destroy()]);
+  }
+}
+
+export async function extractRorPdf(file: File, progress?: (message: string) => void) {
+  const pages = await readPdfPages(file, progress);
     const result = parseRorText(pages, file.name);
     if (!result.document.khataNumber && !result.document.mouza && !result.recordedTenants.length && !result.plots.length) {
       throw new Error('No supported ROR fields were recognized. Continue with manual entry.');
     }
     return result;
-  } finally {
-    await Promise.allSettled([ocr?.terminate(), loading.destroy()]);
-  }
 }

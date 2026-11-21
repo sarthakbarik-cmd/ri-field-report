@@ -1,3 +1,4 @@
+import { DispatchModule } from './components/modules/DispatchModule';
 import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { Dashboard } from './components/Dashboard';
@@ -295,6 +296,8 @@ export default function App() {
         )}
 
         {/* COLUMN 2 CAMP: ANNEXURE-II FIELD COLLECTION & SIGNATURES */}
+        {activeModule === 'DISPATCH' && <DispatchModule key={user?.uid || 'guest'} profile={riProfile} />}
+
         {activeModule === 'COLUMN_2_CAMP' && (
           <Column2CampModule
             onBackToDashboard={() => setActiveModule('HOME')}
