@@ -9,6 +9,7 @@ const types = {
   '.html': 'text/html; charset=utf-8',
   '.ico': 'image/x-icon',
   '.jpg': 'image/jpeg',
+  '.mjs': 'text/javascript; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
 };
 const clientDir = 'dist/client';

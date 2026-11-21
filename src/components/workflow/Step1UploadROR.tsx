@@ -39,6 +39,7 @@ export const Step1UploadROR: React.FC<Step1UploadRORProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (file: File) => {
+    if (isLoading) return;
     setErrorMessage(null);
 
     if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
@@ -61,61 +62,19 @@ export const Step1UploadROR: React.FC<Step1UploadRORProps> = ({
     setProgressMessage('Reading uploaded PDF file...');
 
     try {
-      // Convert file to base64
-      const reader = new FileReader();
-      reader.onload = async () => {
-        try {
-          const base64String = reader.result as string;
-
-          setProgressMessage('Sending PDF to Gemini AI server for multimodal extraction...');
-
-          const response = await fetch('/api/extract-ror', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              pdfBase64: base64String,
-              fileName: file.name,
-            }),
-          });
-
-          if (!response.ok) {
-            const errData = await response.json().catch(() => ({}));
-            throw new Error(errData.error || `Server responded with status ${response.status}`);
-          }
-
-          const result = await response.json();
-          if (!result.success || !result.data) {
-            throw new Error(result.error || 'Invalid response structure returned by AI extraction server.');
-          }
-
-          setProgressMessage('Validation complete! Processing ROR metadata...');
-          setTimeout(() => {
-            setIsLoading(false);
-            onExtractionSuccess(
-              result.data as RORExtractionResult,
-              result.rawJsonString || JSON.stringify(result.data),
-              base64String,
-              file.name
-            );
-          }, 400);
-        } catch (err: any) {
-          console.error('Extraction error:', err);
-          setIsLoading(false);
-          setErrorMessage(
-            err.message || 'Unable to extract information from this ROR PDF. Please verify GEMINI_API_KEY or proceed with manual entry.'
-          );
-        }
-      };
-
-      reader.onerror = () => {
-        setIsLoading(false);
-        setErrorMessage('Failed to read the selected PDF file from your device.');
-      };
-
-      reader.readAsDataURL(file);
-    } catch (err: any) {
+      const { extractRorPdf } = await import('../../utils/rorPdf');
+      const data = await extractRorPdf(file, setProgressMessage);
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(new Error('Failed to read the PDF for preview.'));
+        reader.readAsDataURL(file);
+      });
+      onExtractionSuccess(data, JSON.stringify(data), base64, file.name);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Unable to read this PDF. Continue with manual entry.');
+    } finally {
       setIsLoading(false);
-      setErrorMessage(err.message || 'Unexpected error during file upload.');
     }
   };
 
@@ -133,7 +92,7 @@ export const Step1UploadROR: React.FC<Step1UploadRORProps> = ({
           {language === 'or' ? 'ପଟ୍ଟା / ଖାତିୟାନ୍ PDF ଅପଲୋଡ୍ କରନ୍ତୁ' : 'Upload Record of Rights (ROR) PDF'}
         </h2>
         <p className="text-sm text-slate-600">
-          Upload any official Odisha Record of Rights PDF document. Gemini AI will analyze the full document, extract District, Tahasil, Mouza, Khata No, and the complete list of recorded tenants automatically.
+          Choose an Odisha Record of Rights PDF. Your browser reads it on this device. Review the extracted fields and add anything missing. Scanned PDFs may need an internet connection on first use to download OCR language files.
         </p>
       </div>
 

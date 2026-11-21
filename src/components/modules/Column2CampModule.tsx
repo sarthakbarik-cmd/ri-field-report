@@ -408,28 +408,11 @@ export const Column2CampModule: React.FC<Column2CampModuleProps> = ({
   // ==================== ROR PDF EXTRACTION & KHANA-2 IMPORT ====================
 
   const handleUploadRorPdf = async (file: File) => {
+    if (isExtractingPdf) return;
     setIsExtractingPdf(true);
     try {
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = () => reject(new Error('Failed to read PDF file.'));
-        reader.readAsDataURL(file);
-      });
-
-      const res = await fetch('/api/extract-ror', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pdfBase64: base64, fileName: file.name }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || 'RoR PDF extraction failed.');
-      }
-
-      const payload = await res.json();
-      const extracted = payload.data as RORExtractionResult;
+      const { extractRorPdf } = await import('../../utils/rorPdf');
+      const extracted = await extractRorPdf(file);
       const docInfo = extracted.document;
 
       const fullTenantText = (extracted.recordedTenants || [])
@@ -481,7 +464,7 @@ export const Column2CampModule: React.FC<Column2CampModuleProps> = ({
 
       showNotice(
         'success',
-        `Extracted Khata ${docInfo.khataNumber} (${docInfo.mouza}) with ${rtsToUse.length || 1} tenant(s) from RoR PDF.`
+        `Extracted Khata ${docInfo.khataNumber} (${docInfo.mouza}) with ${rtsToUse.length} recognized tenant(s). Review all fields against the PDF.`
       );
     } catch (err: any) {
       showNotice('error', err.message || 'Unable to extract RoR PDF.');
