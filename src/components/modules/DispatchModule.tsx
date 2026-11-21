@@ -203,8 +203,9 @@ export function DispatchModule({ profile }: { profile: RIProfile }) {
         <label>Language<select className={fieldClass} disabled={busy} value={draft.language} onChange={event => setDraft({ ...draft, language: event.target.value as LetterDraft['language'] })}>
           <option value="en">English</option><option value="or">Odia</option>
         </select></label>
-        {([['recipient', 'Recipient'], ['subject', 'Subject'], ['reference', 'Incoming memo number and date'], ['deadline', 'Response deadline'], ['enclosure', 'Enclosures']] as const).map(([key, label]) =>
-          <label key={key}>{label}<input className={fieldClass} value={draft[key]} required={key === 'recipient' || key === 'subject'} onChange={event => setDraft({ ...draft, [key]: event.target.value })} /></label>)}
+        <label>Recipient<textarea className={fieldClass} rows={2} value={draft.recipient} required onChange={event => setDraft({ ...draft, recipient: event.target.value })} /></label>
+        {([['subject', 'Subject'], ['reference', 'Incoming memo number and date'], ['deadline', 'Response deadline'], ['enclosure', 'Enclosures']] as const).map(([key, label]) =>
+          <label key={key}>{label}<input className={fieldClass} value={draft[key]} required={key === 'subject'} onChange={event => setDraft({ ...draft, [key]: event.target.value })} /></label>)}
       </div>
       <label>Letter body<textarea className={fieldClass} rows={7} value={draft.body} required onChange={event => setDraft({ ...draft, body: event.target.value })} /></label>
       <details>
