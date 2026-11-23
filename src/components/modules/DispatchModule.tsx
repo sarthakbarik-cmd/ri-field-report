@@ -4,6 +4,7 @@ import type { RIProfile } from '../../types';
 import { cancelDispatch, dispatchDate, downloadDispatchPdf, issueDispatch, letterTypes, readDispatchSignature, readIssuedSignature, saveDispatchPdf, saveDispatchSignature, watchDispatch } from '../../services/dispatchRegister';
 import type { DispatchEntry, LetterDraft } from '../../services/dispatchRegister';
 
+import { dispatchBlocks, dispatchTable } from '../../utils/dispatchBlocks';
 import { dispatchEmblem, letterLayout, letterNumberLine, letterParagraphs, parsePastedLetter } from '../../utils/dispatchLetter';
 
 const blank: LetterDraft = { type: 'Other', language: 'en', recipient: '', subject: '', reference: '', deadline: '', body: '', enclosure: '' };
@@ -118,6 +119,26 @@ export function DispatchModule({ profile }: { profile: RIProfile }) {
     }
   }
 
+  async function previewPdf() {
+    setBusy(true);
+    try {
+      const { renderDispatchPdf } = await import('../../utils/dispatchPdf');
+      const bytes = await renderDispatchPdf({
+        ...draft, id, number: 0, date: dispatchDate(), office, layout,
+        officer: profile.riName || (draft.language === 'or' ? 'ରାଜସ୍ୱ ନିରୀକ୍ଷକ' : 'Revenue Inspector'),
+      }, signature);
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(new Blob([new Uint8Array(bytes)], { type: 'application/pdf' }));
+      link.download = 'Dispatch-layout-preview.pdf';
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(link.href), 30_000);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Could not generate the preview PDF.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function archivePdf(account: string, row: DispatchEntry) {
     const { renderDispatchPdf } = await import('../../utils/dispatchPdf');
     const image = await readIssuedSignature(account, row);
@@ -143,7 +164,7 @@ export function DispatchModule({ profile }: { profile: RIProfile }) {
     setNotice('');
     let row: DispatchEntry | undefined;
     try {
-      row = await issueDispatch(uid, id, draft, office, profile.riName || 'Revenue Inspector',
+      row = await issueDispatch(uid, id, draft, office, profile.riName || (draft.language === 'or' ? 'ରାଜସ୍ୱ ନିରୀକ୍ଷକ' : 'Revenue Inspector'),
         paper.trim() ? Number(paper) : null, layout, image);
       setIssued(row);
       setYear(row.date.slice(0, 4));
@@ -215,14 +236,43 @@ export function DispatchModule({ profile }: { profile: RIProfile }) {
             <img src={dispatchEmblem} alt="Odisha government emblem" className="mx-auto mb-2 h-16 w-auto" />
             {layout.header}
           </header>
-          <p className="whitespace-pre-wrap text-center">{letterNumberLine(draft.language, '—', '—')}</p>
-          {letterParagraphs(draft).map((paragraph, index) => <p className="whitespace-pre-wrap break-words" key={index}>{paragraph}</p>)}
+          <p className="whitespace-pre-wrap text-center">{letterNumberLine(draft.language, '—', dispatchDate())}</p>
+          {letterParagraphs({ ...draft, enclosure: '' }).map((paragraph, index) => <p className="whitespace-pre-wrap break-words" key={index}>{paragraph}</p>)}
+          {dispatchBlocks(draft.body).map((block, index) => {
+            if (block.kind === 'table') {
+              const table = dispatchTable(block);
+              return <div className="overflow-x-auto" key={index}>
+                <table className="w-full border-collapse text-sm">
+                  <thead className="bg-slate-100">
+                    {table.groups && <tr>{table.groups.map((group, column) => <th key={column} colSpan={4} className="border p-2 text-center">{group}</th>)}</tr>}
+                    <tr>{table.headings.map((heading, column) => <th key={column} scope="col" className="border p-2">{heading}</th>)}</tr>
+                  </thead>
+                  <tbody>{table.rows.map((row, rowIndex) => <tr key={rowIndex}>{row.map((cell, column) =>
+                    <td key={column} className={block.witness ? 'h-12 border p-2' : 'border p-2'}>{cell}</td>)}</tr>)}</tbody>
+                </table>
+              </div>;
+            }
+            if (block.kind === 'list') {
+              const List = block.ordered ? 'ol' : 'ul';
+              return <List key={index} className={block.ordered ? 'ml-5 list-decimal' : 'ml-5 list-disc'}>
+                {block.items.map((item, itemIndex) => <li key={itemIndex}>{item}</li>)}
+              </List>;
+            }
+            if (block.kind === 'heading') return <h3 className="font-semibold" key={index}>{block.text}</h3>;
+            if (block.kind === 'field') return <p key={index}>{block.text} <span className="inline-block w-40 border-b border-slate-500" /></p>;
+            return <p className="whitespace-pre-wrap break-words" key={index}>{block.text.split(/(\*\*[^*]+\*\*)/u).map((part, partIndex) =>
+              part.startsWith('**') && part.endsWith('**') ? <strong key={partIndex}>{part.slice(2, -2)}</strong> : part)}</p>;
+          })}
+          {draft.enclosure && <p>{draft.language === 'or' ? 'ସଂଲଗ୍ନ' : 'Enclosures'}: {draft.enclosure}</p>}
           <div className="flex flex-col items-end">
             {signature && !signatureLoading && <img className="max-h-24 max-w-44 object-contain" src={signature} alt="Saved signature for this language" />}
             <p>{profile.riName || 'Revenue Inspector'}</p>
           </div>
           {layout.footer && <footer className="border-t pt-3 text-center">{layout.footer}</footer>}
         </article>
+        <button type="button" className={buttonClass} disabled={busy || !draft.body.trim()} onClick={() => void previewPdf()}>
+          Download PDF preview
+        </button>
       </details>
       {uid ? <>
         {(!entries.length || year !== currentYear) && <label>Last paper dispatch number for {currentYear}, or 0 for a new series<input className={fieldClass} type="number" min="0" step="1" value={paper} onChange={event => setPaper(event.target.value)} /></label>}

@@ -12,13 +12,16 @@ const greeting = /^(?:(?:dear\s+)?(?:sir\s*\/\s*madam|sir|madam)|ମହାଶୟ
 const signoff = /^(?:yours\s+(?:faithfully|sincerely|truly)|faithfully|sincerely|ବିଶ୍ୱସ୍ତ|ବିନୀତ)\s*[,.:।]?$/iu;
 const officerLine = /(?:revenue inspector|ରାଜସ୍ୱ ନିରୀକ୍ଷକ)/iu;
 
+const reportTitle = /^(?:କ୍ଷେତ୍ର\s*ତଦନ୍ତ\s*ପ୍ରତିବେଦନ|field (?:enquiry|inquiry|investigation) report)$/iu;
+const caseCaption = /^(?:ବିକ୍ରୟ-କ୍ରୟ ପ୍ରାକ୍-ବନ୍ଦୋବସ୍ତ ମାମଲା ନଂ|pre[- ]settlement case (?:no\.?|number))\s*[–:-]?\s*[୦-୯0-9/]+$/iu;
+
 function plainLine(line: string) {
   return line.replace(/\\([*_])/gu, '$1').replace(/\*\*([^*]+)\*\*/gu, '$1').replace(/\\\s*$/u, '').trimEnd();
 }
 
 export function parsePastedLetter(text: string): Partial<LetterDraft> {
   const result: Partial<LetterDraft> = { language: /[\u0b00-\u0b7f]/u.test(text) ? 'or' : 'en' };
-  const lines = text.trim().split(/\r?\n/).map(plainLine);
+  const lines = text.trim().split(/\r?\n/).map(line => line.replace(/\\\s*$/u, ''));
   const body: string[] = [];
   let inPreamble = true;
   let seenGreeting = false;
@@ -31,7 +34,8 @@ export function parsePastedLetter(text: string): Partial<LetterDraft> {
   };
 
   for (const [index, line] of lines.entries()) {
-    const value = line.trim();
+    const value = plainLine(line).trim().replace(/^#{1,6}\s+/u, '');
+    if (inPreamble && (reportTitle.test(value) || caseCaption.test(value))) continue;
     if (signoff.test(value)) {
       const tail = lines.slice(index + 1).filter(line => line.trim());
       if (tail.length <= 8 && tail.some(line => officerLine.test(line))) break;
@@ -80,7 +84,9 @@ export function parsePastedLetter(text: string): Partial<LetterDraft> {
 export const dispatchEmblem = import.meta.env.BASE_URL + 'assets/dispatch-emblem.png';
 
 export function letterNumberLine(language: LetterDraft['language'], number: string, date: string) {
-  return language === 'or' ? `ପତ୍ର ସଂଖ୍ୟା: ${number}     ତାରିଖ: ${date}` : `Letter No.: ${number}     Date: ${date}`;
+  const displayDate = /^\d{4}-\d{2}-\d{2}$/.test(date) ? date.split('-').reverse().join('.') : date;
+  const localized = (text: string) => text.replace(/[0-9]/g, digit => '୦୧୨୩୪୫୬୭୮୯'[Number(digit)]);
+  return language === 'or' ? `ପତ୍ର ସଂଖ୍ୟା: ${localized(number)}     ତାରିଖ: ${localized(displayDate)}` : `Letter No.: ${number}     Date: ${displayDate}`;
 }
 
 export function letterParagraphs(entry: LetterDraft) {
@@ -89,7 +95,6 @@ export function letterParagraphs(entry: LetterDraft) {
     entry.recipient && `${odia ? 'ପ୍ରାପ୍ତେଷୁ' : 'To'}:${entry.recipient.includes('\n') ? '\n' : ' '}${entry.recipient}`,
     `${odia ? 'ବିଷୟ' : 'Subject'}: ${entry.subject}`,
     entry.reference && `${odia ? 'ସୂତ୍ର' : 'Reference'}: ${entry.reference}`,
-    entry.body,
     entry.enclosure && `${odia ? 'ସଂଲଗ୍ନ' : 'Enclosures'}: ${entry.enclosure}`,
   ].filter(Boolean);
 }
