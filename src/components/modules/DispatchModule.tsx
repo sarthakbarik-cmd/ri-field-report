@@ -1,3 +1,4 @@
+import { EnquiryTemplate } from './EnquiryTemplate';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../lib/AuthContext';
 import type { RIProfile } from '../../types';
@@ -228,6 +229,21 @@ export function DispatchModule({ profile }: { profile: RIProfile }) {
         {([['subject', 'Subject'], ['reference', 'Incoming memo number and date'], ['deadline', 'Response deadline'], ['enclosure', 'Enclosures']] as const).map(([key, label]) =>
           <label key={key}>{label}<input className={fieldClass} value={draft[key]} required={key === 'subject'} onChange={event => setDraft({ ...draft, [key]: event.target.value })} /></label>)}
       </div>
+      {(draft.type === 'Birth enquiry' || draft.type === 'Death enquiry') && <div key={draft.type}><EnquiryTemplate
+        type={draft.type}
+        language={draft.language}
+        disabled={busy || confirming}
+        onGenerate={generated => {
+          setDraft(previous => ({
+            ...previous,
+            ...generated,
+            recipient: previous.recipient || (profile.tahasil
+              ? `${previous.language === 'or' ? 'ତହସିଲଦାର' : 'Tahasildar'},\n${[profile.tahasil, profile.district].filter(Boolean).join(', ')}`
+              : ''),
+          }));
+          setNotice('Template filled. Review the letter and add any verified findings before issuing.');
+        }}
+      /></div>}
       <label>Letter body<textarea className={fieldClass} rows={7} value={draft.body} required onChange={event => setDraft({ ...draft, body: event.target.value })} /></label>
       <details>
         <summary>Preview official letter</summary>
