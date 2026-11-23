@@ -77,7 +77,7 @@ export function parsePastedLetter(text: string): Partial<LetterDraft> {
   return result;
 }
 
-export const dispatchEmblem = '/assets/dispatch-emblem.png';
+export const dispatchEmblem = import.meta.env.BASE_URL + 'assets/dispatch-emblem.png';
 
 export function letterNumberLine(language: LetterDraft['language'], number: string, date: string) {
   return language === 'or' ? `ପତ୍ର ସଂଖ୍ୟା: ${number}     ତାରିଖ: ${date}` : `Letter No.: ${number}     Date: ${date}`;

@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
-    "build:sites": "node sites-worker/build.mjs"
+    "build:sites": "node sites-worker/build.mjs",
+    "build:pages": "vite build --base ./"
   },
   "dependencies": {
     "@fontsource/noto-sans-oriya": "^5.3.0",
