@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Shield, Save, X, User, MapPin, FileText, CheckCircle2, Building, Phone, Briefcase, Hash } from 'lucide-react';
 import { RIProfile } from '../types';
-import { saveRIProfile } from '../utils/storage';
+import { getRIProfile, saveRIProfile } from '../utils/storage';
 import { deriveCircleTag } from '../utils/dispatchNumberService';
 import { useAuth } from '../lib/AuthContext';
 
@@ -29,6 +29,21 @@ export const RIProfileModal: React.FC<RIProfileModalProps> = ({
   const [letterNoPrefix, setLetterNoPrefix] = useState(currentProfile.letterNoPrefix || '');
   const [phone, setPhone] = useState(currentProfile.phone || '');
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const browserProfile = user && !currentProfile.riCircle ? getRIProfile(null) : null;
+
+  const fillFromBrowser = () => {
+    if (!browserProfile) return;
+    setRiName(browserProfile.riName);
+    setRiCircle(browserProfile.riCircle);
+    setDesignation(browserProfile.designation || 'Revenue Inspector');
+    setTahasil(browserProfile.tahasil || '');
+    setDistrict(browserProfile.district || '');
+    setOfficeName(browserProfile.officeName || '');
+    setLetterNoPrefix(browserProfile.letterNoPrefix || '');
+    setPhone(browserProfile.phone || '');
+  };
 
   if (!isOpen) return null;
 
@@ -44,6 +59,9 @@ export const RIProfileModal: React.FC<RIProfileModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
+    setSaving(true);
+    setSaveError('');
     const updated: RIProfile = {
       riName: riName.trim(),
       designation: designation.trim(),
@@ -55,26 +73,29 @@ export const RIProfileModal: React.FC<RIProfileModalProps> = ({
       phone: phone.trim(),
     };
 
-    saveRIProfile(updated);
-    onProfileUpdated(updated);
-
-    // Also sync to Firebase User Profile if logged in
-    if (user) {
-      try {
+    try {
+      if (user) {
         await updateProfile({
-          name: updated.riName || user.displayName || '',
+          name: updated.riName,
           riCircle: updated.riCircle,
-          tahasil: updated.tahasil || '',
-          district: updated.district || '',
-          designation: updated.designation || 'RI',
+          tahasil: updated.tahasil,
+          district: updated.district,
+          designation: updated.designation,
           officeName: updated.officeName,
           letterNoPrefix: updated.letterNoPrefix,
           phone: updated.phone,
         });
-      } catch (err) {
-        console.warn('Could not sync user profile to cloud:', err);
+      } else {
+        saveRIProfile(updated, null);
       }
+    } catch {
+      setSaveError('Could not save your profile to Firebase. Check your connection and try again.');
+      setSaving(false);
+      return;
     }
+
+    onProfileUpdated(updated);
+    setSaving(false);
 
     setSavedSuccess(true);
     setTimeout(() => {
@@ -113,13 +134,19 @@ export const RIProfileModal: React.FC<RIProfileModalProps> = ({
         {savedSuccess ? (
           <div className="p-6 bg-emerald-50 border border-emerald-200 rounded-xl text-center space-y-2">
             <CheckCircle2 className="w-10 h-10 text-emerald-600 mx-auto animate-bounce" />
-            <h4 className="font-bold text-emerald-900 text-sm">Official Profile Saved Successfully!</h4>
+            <h4 className="font-bold text-emerald-900 text-sm">{user ? 'Profile saved to your Google account' : 'Profile saved on this device'}</h4>
             <p className="text-xs text-emerald-700">
               All modules (Khana-2, Farmer Land Share, OLR 19, Disaster Relief) will now auto-fetch these details.
             </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
+            {browserProfile?.riCircle && (
+              <button type="button" disabled={saving} onClick={fillFromBrowser} className="rounded-lg border border-blue-300 px-3 py-2 text-sm text-blue-800">
+                Use previously saved details from this browser
+              </button>
+            )}
+            {saveError && <p role="alert" className="text-sm text-red-700">{saveError}</p>}
             {/* Officer Name & Designation */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
@@ -294,10 +321,11 @@ export const RIProfileModal: React.FC<RIProfileModalProps> = ({
 
               <button
                 type="submit"
+                disabled={saving}
                 className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center space-x-1.5"
               >
                 <Save className="w-4 h-4" />
-                <span>Save & Apply to System</span>
+                <span>{saving ? 'Saving…' : 'Save & Apply to System'}</span>
               </button>
             </div>
           </form>

@@ -12,6 +12,7 @@ import {
   DisasterEventConfig,
   Column2CampRecord,
 } from '../types';
+import { auth } from '../lib/firebase';
 import { generateNextDispatchForModule } from './dispatchNumberService';
 
 const STORAGE_KEY = 'khana2_correction_cases_v1';
@@ -26,9 +27,13 @@ const COLUMN_2_CAMP_STORAGE_KEY = 'column_2_camp_annexure2_records_v1';
 const RI_SAVED_SIGNATURE_KEY = 'ri_saved_pencil_signature_v1';
 
 
-export function getRIProfile(): RIProfile {
+function riProfileKey(uid: string | null) {
+  return uid ? `${RI_PROFILE_KEY}:${uid}` : RI_PROFILE_KEY;
+}
+
+export function getRIProfile(uid: string | null = auth.currentUser?.uid ?? null): RIProfile {
   try {
-    const raw = localStorage.getItem(RI_PROFILE_KEY);
+    const raw = localStorage.getItem(riProfileKey(uid));
     if (raw) {
       const parsed = JSON.parse(raw);
       return {
@@ -52,9 +57,9 @@ export function getRIProfile(): RIProfile {
   };
 }
 
-export function saveRIProfile(profile: RIProfile): RIProfile {
+export function saveRIProfile(profile: RIProfile, uid: string | null = auth.currentUser?.uid ?? null): RIProfile {
   try {
-    localStorage.setItem(RI_PROFILE_KEY, JSON.stringify(profile));
+    localStorage.setItem(riProfileKey(uid), JSON.stringify(profile));
   } catch (err) {
     console.error('Failed to save RI profile:', err);
   }

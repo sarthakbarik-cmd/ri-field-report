@@ -7,6 +7,7 @@ import {
   syncUserProfile,
   getUserProfile,
 } from '../services/cloudSyncService';
+import { saveRIProfile } from '../utils/storage';
 import { UserProfile } from '../types';
 
 interface AuthContextType {
@@ -34,37 +35,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) {
-        try {
-          const profile = await getUserProfile(currentUser.uid);
-          if (profile) {
-            setUserProfile(profile);
-          } else {
-            const synced = await syncUserProfile(currentUser);
-            setUserProfile(synced);
-          }
-        } catch (err) {
-          console.error('Failed to load user profile from cloud:', err);
-        }
-      } else {
-        setUserProfile(null);
-      }
-      setLoading(false);
-    });
+  function applyCloudProfile(profile: UserProfile, uid: string) {
+    saveRIProfile({
+      riName: profile.name,
+      riCircle: profile.riCircle || '',
+      tahasil: profile.tahasil,
+      district: profile.district,
+      designation: profile.designation,
+      officeName: profile.officeName,
+      letterNoPrefix: profile.letterNoPrefix,
+      phone: profile.phone,
+    }, uid);
+    setUserProfile(profile);
+  }
 
-    return () => unsubscribe();
+  useEffect(() => {
+    let revision = 0;
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      const request = ++revision;
+      setUser(currentUser);
+      setUserProfile(null);
+      setLoading(!!currentUser);
+      if (!currentUser) return;
+      try {
+        const profile = (await getUserProfile(currentUser.uid)) ?? (await syncUserProfile(currentUser));
+        if (request === revision) applyCloudProfile(profile, currentUser.uid);
+      } catch (err) {
+        console.error('Failed to load user profile from cloud:', err);
+      } finally {
+        if (request === revision) setLoading(false);
+      }
+    });
+    return () => {
+      revision++;
+      unsubscribe();
+    };
   }, []);
 
   const login = async () => {
     setLoading(true);
     try {
-      const loggedUser = await loginWithGoogle();
-      return loggedUser;
-    } finally {
+      return await loginWithGoogle();
+    } catch (error) {
       setLoading(false);
+      throw error;
     }
   };
 
@@ -80,9 +94,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateProfile = async (data: Partial<UserProfile>) => {
-    if (!user) return;
+    if (!user || auth.currentUser?.uid !== user.uid) throw new Error('Sign in again before saving your profile.');
     const updated = await syncUserProfile(user, data);
-    setUserProfile(updated);
+    if (auth.currentUser?.uid !== user.uid) throw new Error('Your account changed while saving.');
+    applyCloudProfile(updated, user.uid);
   };
 
   return (

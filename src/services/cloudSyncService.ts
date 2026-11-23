@@ -4,6 +4,7 @@ import {
   setDoc,
   getDoc,
   getDocs,
+  runTransaction,
   deleteDoc,
   onSnapshot,
   Unsubscribe,
@@ -82,11 +83,7 @@ export function handleFirestoreError(
 export const loginWithGoogle = async (): Promise<FirebaseUser | null> => {
   try {
     const result = await signInWithPopup(auth, googleProvider);
-    if (result.user) {
-      await syncUserProfile(result.user);
-      return result.user;
-    }
-    return null;
+    return result.user;
   } catch (error) {
     console.error('Google Login Error:', error);
     throw error;
@@ -107,19 +104,10 @@ export const syncUserProfile = async (
   additionalData?: Partial<UserProfile>
 ): Promise<UserProfile> => {
   const userRef = doc(db, 'users', user.uid);
-  const snap = await getDoc(userRef);
-
-  let profile: UserProfile;
-  const now = new Date().toISOString();
-
-  if (snap.exists()) {
-    profile = {
-      ...(snap.data() as UserProfile),
-      ...additionalData,
-      updatedAt: now,
-    };
-  } else {
-    profile = {
+  return runTransaction(db, async transaction => {
+    const snap = await transaction.get(userRef);
+    if (snap.exists() && !additionalData) return snap.data() as UserProfile;
+    const existing: UserProfile = snap.exists() ? snap.data() as UserProfile : {
       uid: user.uid,
       name: user.displayName || 'Revenue Officer',
       email: user.email || '',
@@ -128,28 +116,17 @@ export const syncUserProfile = async (
       tahasil: 'Champua',
       district: 'Kendujhar',
       riCircle: '',
-      updatedAt: now,
-      ...additionalData,
+      updatedAt: '',
     };
-  }
-
-  // Remove undefined fields for Firestore compatibility
-  const cleanProfile = JSON.parse(JSON.stringify(profile));
-  await setDoc(userRef, cleanProfile, { merge: true });
-  return profile;
+    const updated = { ...existing, ...additionalData, updatedAt: new Date().toISOString() };
+    transaction.set(userRef, JSON.parse(JSON.stringify(updated)), { merge: true });
+    return updated;
+  });
 };
 
 export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {
-  try {
-    const userRef = doc(db, 'users', uid);
-    const snap = await getDoc(userRef);
-    if (snap.exists()) {
-      return snap.data() as UserProfile;
-    }
-  } catch (err) {
-    console.error('Error fetching user profile:', err);
-  }
-  return null;
+  const snap = await getDoc(doc(db, 'users', uid));
+  return snap.exists() ? snap.data() as UserProfile : null;
 };
 
 // ==================== KHANA-2 CASES CLOUD SYNC ====================

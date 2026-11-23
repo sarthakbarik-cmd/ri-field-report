@@ -30,7 +30,7 @@ import { useAuth } from './lib/AuthContext';
 import { ArrowLeft, Printer } from 'lucide-react';
 
 export default function App() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [activeModule, setActiveModule] = useState<ModuleType>(() => window.location.hash === '#dispatch' ? 'DISPATCH' : 'HOME');
   const [cases, setCases] = useState<CaseData[]>([]);
   const [activeCase, setActiveCase] = useState<CaseData | null>(null);
@@ -38,7 +38,8 @@ export default function App() {
   const [language, setLanguage] = useState<'en' | 'or'>('en');
   const [showAILogModal, setShowAILogModal] = useState(false);
   const [showRIProfileModal, setShowRIProfileModal] = useState(false);
-  const [riProfile, setRiProfile] = useState<RIProfile>(getRIProfile());
+  const [guestProfile, setGuestProfile] = useState<RIProfile>(() => getRIProfile(null));
+  const riProfile = user ? getRIProfile(user.uid) : guestProfile;
   const [workflowInitialStep, setWorkflowInitialStep] = useState(1);
 
   // Real-time Firestore Sync subscription + LocalStorage initial migration
@@ -85,7 +86,7 @@ export default function App() {
   };
 
   const handleRIProfileUpdated = (updated: RIProfile) => {
-    setRiProfile(updated);
+    if (!user) setGuestProfile(updated);
     if (activeCase) {
       const updatedCase: CaseData = {
         ...activeCase,
@@ -326,12 +327,12 @@ export default function App() {
       )}
 
       {/* RI Profile Settings Modal */}
-      <RIProfileModal
-        isOpen={showRIProfileModal}
+      {showRIProfileModal && !loading && <div key={user?.uid || 'guest'}><RIProfileModal
+        isOpen
         onClose={() => setShowRIProfileModal(false)}
         currentProfile={riProfile}
         onProfileUpdated={handleRIProfileUpdated}
-      />
+      /></div>}
 
       {/* System Footer */}
       <footer className="h-8 bg-slate-800 text-slate-400 text-[10px] flex items-center justify-between px-4 sm:px-6 mt-auto border-t border-slate-700 print:hidden">
