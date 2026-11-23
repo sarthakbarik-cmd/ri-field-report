@@ -79,7 +79,7 @@ export function dispatchDocument(entry: DispatchEntry, emblem: string, signature
   });
   const lastBlock = !enclosure && body.at(-1);
   const closingLead = lastBlock && 'text' in lastBlock &&
-    Array.isArray(lastBlock.text) && lastBlock.text.reduce((length, run) => length + run.text.length, 0) < 500
+    Array.isArray(lastBlock.text) && lastBlock.text.map(run => run.text).join('').length < 500
     ? body.pop() : undefined;
   return {
     pageSize: 'A4', pageMargins: [48, 42, 48, 46],
