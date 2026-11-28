@@ -16,7 +16,7 @@ export function registerWorkbook(headers: string[], rows: string[][]) {
   const files = {
     '[Content_Types].xml': '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>',
     '_rels/.rels': `<Relationships xmlns="${relations}"><Relationship Id="rId1" Type="${office}/officeDocument" Target="xl/workbook.xml"/></Relationships>`,
-    'xl/workbook.xml': `<workbook xmlns="${spreadsheet}" xmlns:r="${office}"><sheets><sheet name="Register IV" sheetId="1" r:id="rId1"/></sheets></workbook>`,
+    'xl/workbook.xml': `<workbook xmlns="${spreadsheet}" xmlns:r="${office}"><sheets><sheet name="ରେଜିଷ୍ଟର IV" sheetId="1" r:id="rId1"/></sheets></workbook>`,
     'xl/_rels/workbook.xml.rels': `<Relationships xmlns="${relations}"><Relationship Id="rId1" Type="${office}/worksheet" Target="worksheets/sheet1.xml"/></Relationships>`,
     'xl/worksheets/sheet1.xml': `<worksheet xmlns="${spreadsheet}"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols><col min="1" max="${headers.length}" width="23" customWidth="1"/></cols><sheetData>${sheets}</sheetData></worksheet>`,
   };

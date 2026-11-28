@@ -5,7 +5,7 @@ import { useAuth } from '../../lib/AuthContext';
 import { dispatchDate, downloadFile, readDispatchSignature } from '../../services/dispatchRegister';
 import {
   archiveGForm, changeGStart, downloadGForm, financialYear, followUpFields, gSerial, issueGForm,
-  registerColumns, saveGFollowUp, watchGCounter, watchGEntries,
+  occupiedLandAssessment, occupationModes, occupationOdia, registerColumns, registerIvLabels, saveGFollowUp, watchGCounter, watchGEntries,
 } from '../../services/encroachmentRegister';
 import type { FollowUp, GEntry, GForm } from '../../services/encroachmentRegister';
 
@@ -15,13 +15,14 @@ const outline = 'rounded-lg border border-slate-300 px-4 py-2 font-medium disabl
 
 function emptyForm(profile: RIProfile): GForm {
   return {
+    format: 'odia',
     circle: profile.riCircle || 'Chimila', tahasil: profile.tahasil || 'Champua',
     subdivision: 'Champua', district: profile.district || 'Kendujhar',
     village: '', name: '', father: '', address: '', category: '',
     khata: '', plot: '', fullArea: '', occupiedArea: '', kisam: '', landClass: '',
     areaType: 'Rural', municipalHouse: '', municipalUse: '', municipalReserved: '',
     landless: '', ownLand: '', familyLand: '', homestead: '', income: '', occupation: '',
-    inspectionDate: dispatchDate(), previousCase: '', taram: '', comparable: '', occupiedAssessment: '',
+    inspectionDate: dispatchDate(), previousCase: 'N/A', taram: '', comparable: 'N/A', occupiedAssessment: '',
     remarks: 'May be evicted', officer: profile.riName || 'Revenue Inspector',
   };
 }
@@ -54,12 +55,12 @@ const groups: { name: string; fields: FieldProps[] }[] = [
   ] },
   { name: 'Enquiry and assessment', fields: [
     { field: 'landless', label: 'Whether landless', options: yesNo },
-    { field: 'income', label: 'Person and household non-agricultural income' },
-    { field: 'occupation', label: 'Mode of occupation' },
-    { field: 'previousCase', label: 'Previously booked? Enter “No” or previous case no.' },
-    { field: 'taram', label: 'Taram assessment rate', optional: true },
-    { field: 'comparable', label: 'Comparable rate if unassessed', optional: true },
-    { field: 'occupiedAssessment', label: 'Assessment of occupied extent' },
+    { field: 'income', label: 'Person and household income from all sources' },
+    { field: 'occupation', label: 'ଜମିର ବ୍ୟବହାର (Mode of occupation)', options: occupationModes },
+    { field: 'previousCase', label: 'Previous encroachment case no. and year, if any' },
+    { field: 'taram', label: 'Taram rate per acre', optional: true },
+    { field: 'comparable', label: 'Comparable rate per acre if unassessed', optional: true },
+    { field: 'occupiedAssessment', label: 'Assessment of occupied extent (calculated)' },
     { field: 'remarks', label: 'RI remarks', kind: 'textarea' },
   ] },
 ];
@@ -114,16 +115,20 @@ export function EncroachmentModule({ profile, onSignatures }: { profile: RIProfi
     }
   }
 
+  // Prefer the village rate. Use a numeric comparable rate only if Taram is unavailable.
+  const rate = form.taram.trim();
+  const assessment = occupiedLandAssessment(!rate || /^n\/?a$/i.test(rate) ? form.comparable : rate, form.occupiedArea);
+  const finalizedForm = { ...form, occupiedAssessment: assessment };
   const municipal = /^(Municipality|Notified area)$/.test(form.areaType);
   function field({ field, label, options, kind, optional }: FieldProps) {
     const props = {
-      className: input, value: form[field], required: !optional,
+      className: input, value: field === 'occupiedAssessment' ? assessment : form[field], required: !optional,
       onChange: (event: { target: { value: string } }) => setForm(previous => ({ ...previous, [field]: event.target.value })),
     };
     return <label key={field}>{label}
-      {options ? <select {...props}><option value="">Select</option>{options.map(option => <option key={option}>{option}</option>)}</select>
+      {options ? <select {...props}><option value="">Select</option>{options.map(option => <option key={option}>{field === 'occupation' ? occupationOdia[option] : option}</option>)}</select>
         : kind === 'textarea' ? <textarea {...props} rows={2} />
-        : <input {...props} type={kind ?? 'text'} min={kind === 'number' ? '0' : undefined}
+        : <input {...props} readOnly={field === 'occupiedAssessment'} type={kind ?? 'text'} min={kind === 'number' ? '0' : undefined}
           max={kind === 'date' ? today : undefined} step={kind === 'number' ? 'any' : undefined} />}
     </label>;
   }
@@ -136,10 +141,10 @@ export function EncroachmentModule({ profile, onSignatures }: { profile: RIProfi
     if (!signature) return setNotice('Choose a saved signature. Add missing signatures in Dispatch & Letters.');
     const requiredText = [form.circle, form.tahasil, form.subdivision, form.district, form.officer, form.name, form.father,
       form.address, form.village, form.khata, form.plot, form.kisam, form.landClass, form.income,
-      form.occupation, form.previousCase, form.occupiedAssessment, form.remarks];
+      form.occupation, form.previousCase, form.remarks];
     if (requiredText.some(value => !value.trim())) return setNotice('Fill all required details before signing.');
     if (+form.occupiedArea <= 0 || +form.occupiedArea > +form.fullArea) return setNotice('Occupied area must be positive and cannot exceed the full plot area.');
-    if (!form.taram.trim() && !form.comparable.trim()) return setNotice('Enter the Taram rate or the comparable rate.');
+    if (!assessment) return setNotice('Enter a numeric Taram or comparable rate and the occupied acreage to calculate the assessment.');
     setNotice('');
     setConfirming(true);
   }
@@ -147,7 +152,7 @@ export function EncroachmentModule({ profile, onSignatures }: { profile: RIProfi
   async function signAndIssue() {
     if (!uid || !signature || !confirming) return;
     await perform(async () => {
-      const entry = await issueGForm(uid, id, form, signature);
+      const entry = await issueGForm(uid, id, finalizedForm, signature);
       setYear(entry.year);
       setActive(entry);
       setFollowUp(entry.followUp);
@@ -183,6 +188,7 @@ export function EncroachmentModule({ profile, onSignatures }: { profile: RIProfi
             {field({ field: 'municipalUse', label: 'Adjacent land needed for holding or residence?', options: yesNo })}
             {field({ field: 'municipalReserved', label: 'Reserved for government or development?', options: yesNo })}
           </div>}
+          {group.name === 'Enquiry and assessment' && <p className="mt-2 text-sm text-slate-700">Assessment = rate per acre × occupied acres. The comparable rate applies when Taram is unavailable.</p>}
           {group.name === 'Enquiry and assessment' && form.landless === 'No' && <div className="mt-3 grid gap-3 sm:grid-cols-3">
             {field({ field: 'ownLand', label: 'Own land excluding homestead (acres)', kind: 'number' })}
             {field({ field: 'familyLand', label: 'Family land in common mess (acres)', kind: 'number' })}
@@ -206,7 +212,7 @@ export function EncroachmentModule({ profile, onSignatures }: { profile: RIProfi
       </div> : <div className="flex flex-wrap gap-2">
         <button className={outline} type="button" disabled={busy} onClick={() => void perform(async () => {
           const { renderGForm } = await import('../../utils/encroachmentPdf');
-          const entry: GEntry = { ...form, id, year: currentYear, serial: 0, reportDate: today, followUp: {}, pdfParts: 0 };
+          const entry: GEntry = { ...finalizedForm, id, year: currentYear, serial: 0, reportDate: today, followUp: {}, pdfParts: 0 };
           downloadFile(pdfBlob(await renderGForm(entry)), 'G-Form-preview.pdf');
         })}>Download unsigned preview</button>
         <button className={button} disabled={busy}>{uid ? 'Sign & issue Form G' : 'Sign in to issue Form G'}</button>
@@ -269,13 +275,13 @@ export function EncroachmentModule({ profile, onSignatures }: { profile: RIProfi
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead><tr>{['G Form Sl. No.', 'Report date', 'Village', 'Khata', 'Plot', 'Occupied acres', 'Name', 'Case no.', 'Back rent', 'Penalty', 'J Form Sl. No.'].map(label =>
+            <thead><tr>{[0, 1, 2, 3, 4, 6, 7, 9, 13, 14, 20].map(index => registerIvLabels[index]).map(label =>
               <th key={label} className="whitespace-nowrap p-2" scope="col">{label}</th>)}</tr></thead>
             <tbody>{rows.map(entry => <tr className="border-t border-slate-200" key={entry.id}>
               <td className="p-2"><button type="button" className="text-indigo-800 underline" onClick={() => {
                 setActive(entry); setFollowUp(entry.followUp ?? {});
               }}>{gSerial(entry)}</button>{!entry.pdfParts && <div>PDF pending</div>}</td>
-              {[entry.reportDate, entry.village, entry.khata, entry.plot, entry.occupiedArea, entry.name, entry.followUp?.caseNo,
+              {[entry.reportDate, entry.village, entry.khata, entry.plot, entry.occupiedArea, [entry.name, entry.father, entry.address].filter(Boolean).join(' / '), entry.followUp?.caseNo,
                 entry.followUp?.backRent, entry.followUp?.penalty, entry.followUp?.jForm].map((value, index) =>
                 <td className="p-2" key={index}>{value}</td>)}
             </tr>)}</tbody>

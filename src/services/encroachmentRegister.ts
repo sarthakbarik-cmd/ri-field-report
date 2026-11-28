@@ -19,7 +19,20 @@ export const followUpFields = [
 ] as const;
 export type FollowUp = Partial<Record<typeof followUpFields[number][0], string>>;
 
+export const occupationModes = ['Cultivation', 'House construction', 'Other'] as const;
+export const occupationOdia: Record<string, string> = {
+  Cultivation: 'ଚାଷ', 'House construction': 'ଗୃହ ନିର୍ମାଣ', Other: 'ଅନ୍ୟାନ୍ୟ',
+};
+
+export function occupiedLandAssessment(rate: string, acres: string) {
+  const decimal = /^(?:\d+(?:\.\d*)?|\.\d+)$/u;
+  if (!decimal.test(rate.trim()) || !decimal.test(acres.trim())) return '';
+  const result = Number(rate) * Number(acres);
+  return Number.isFinite(result) ? result.toFixed(2) : '';
+}
+
 export interface GForm {
+  format?: 'odia';
   circle: string;
   tahasil: string;
   subdivision: string;
@@ -135,12 +148,19 @@ export function downloadGForm(uid: string, entry: GEntry) {
   return downloadArchivedPdf(entryRef(uid, entry), entry.pdfParts, `G-Form-${entry.serial}-${entry.year}.pdf`);
 }
 
+export const registerIvLabels = [
+  'କ୍ରମିକ ସଂଖ୍ୟା', 'ଗ ଫରମ ଦାଖଲ ତାରିଖ', 'ମୌଜା', 'ଖାତା ନଂ', 'ପ୍ଲଟ ନଂ',
+  'ମୋଟ ରକବା (ଏକର)', 'ଦଖଲ ରକବା (ଏକର)', 'ଦଖଲକାରୀଙ୍କ ନାମ, ପିତା ଓ ଠିକଣା', 'ଦଖଲର ପ୍ରକାର',
+  'ଜବରଦଖଲ ମାମଲା ନଂ', 'ଆଦେଶ ନଂ ଓ ତାରିଖ', 'ଖଜଣା', 'ସେସ୍', 'ବକେୟା ଖଜଣା', 'ଜୋରିମାନା',
+  'ଉଚ୍ଛେଦ ଆଦେଶ ନଂ ଓ ତାରିଖ', 'ଉଚ୍ଛେଦ ତାରିଖ', 'ବିକ୍ରୟ ମୂଲ୍ୟ / ଆଦାୟ',
+  'ପରବର୍ତ୍ତୀ କାର୍ଯ୍ୟ ଓ ତାରିଖ', 'ରେଜିଷ୍ଟର IX କ୍ରମିକ ନଂ', 'J ଫରମ ଗାର୍ଡ ଫାଇଲ କ୍ରମିକ ନଂ', 'ମନ୍ତବ୍ୟ',
+];
+
 export function registerColumns(rows: GEntry[]) {
   return {
-    headers: ['G Form Sl. No.', 'Report date', 'Village', 'Khata / holding no.', 'Plot no.', 'Full area (ac.)', 'Occupied area (ac.)',
-      'Name in occupation, father and address', 'Mode of occupation', ...followUpFields.map(([, label]) => label)],
+    headers: registerIvLabels,
     rows: rows.map(entry => [gSerial(entry), entry.reportDate, entry.village, entry.khata, entry.plot, entry.fullArea, entry.occupiedArea,
-      [entry.name, entry.father, entry.address].filter(Boolean).join(' / '), entry.occupation,
+      [entry.name, entry.father, entry.address].filter(Boolean).join(' / '), occupationOdia[entry.occupation] ?? entry.occupation,
       ...followUpFields.map(([key]) => entry.followUp?.[key] ?? '')]),
   };
 }
