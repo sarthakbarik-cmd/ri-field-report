@@ -74,33 +74,38 @@ export function gFormDocument(entry: GEntry, signature?: string) {
   const item = (n: number, label: string, value = '') => ({
     text: [...runs(`${odiaNumbers(String(n))}. ${label}:`).map(run => ({ ...run, bold: true })),
       ...runs(value ? '  ' + value : '')],
-    margin: [0, 0, 0, 5],
+    margin: [0, 0, 0, 5.5],
   });
   const municipal = /^(Municipality|Notified area)$/.test(entry.areaType);
-  const acres = (value: string) => value ? `${value} ଏକର` : '—';
+  const acres = (value: string) => {
+    const area = value.trim();
+    return area ? /^n\/?a$/i.test(area) ? 'N/A' : `${area} ଏକର` : '—';
+  };
   const extent = entry.landless === 'Yes' ? 'ପ୍ରଯୁଜ୍ୟ ନୁହେଁ' :
     `ବାସଗୃହ ବ୍ୟତୀତ: ${acres(entry.ownLand)} / ବାସଗୃହ: ${acres(entry.homestead)}`;
   return {
-    pageSize: 'A4', pageMargins: [40, 35, 40, 34], defaultStyle: { ...defaultStyle, font: 'Odia', fontSize: 10 },
+    pageSize: 'A4', pageMargins: [40, 35, 40, 34], defaultStyle: { ...defaultStyle, font: 'Odia', fontSize: 11, lineHeight: 1.08 },
     info: { title: entry.serial ? `ଗ ଫରମ ${gSerial(entry)}` : 'ଗ ଫରମ' },
     content: [
-      { text: runs('ଫାରମ ସଂଖ୍ୟା – ‘G’'), fontSize: 15, bold: true, alignment: 'center' },
+      { text: runs('ଫାରମ ସଂଖ୍ୟା – ‘G’'), fontSize: 18, bold: true, alignment: 'center', margin: [0, 0, 0, 3] },
       { text: '[ନିୟମ ୩(୧) ଦ୍ରଷ୍ଟବ୍ୟ]', alignment: 'center', margin: [0, 1, 0, 4] },
-      { text: 'ସରକାରୀ ଜମିର ବେଆଇନ ଦଖଲ ସମ୍ବନ୍ଧୀୟ ବିବରଣୀ', bold: true, alignment: 'center', margin: [0, 0, 0, 8] },
+      { text: 'ସରକାରୀ ଜମିର ବେଆଇନ ଦଖଲ ସମ୍ବନ୍ଧୀୟ ବିବରଣୀ', bold: true, alignment: 'center', fontSize: 13, margin: [0, 0, 0, 12] },
       { columns: [
         { text: runs(`ଗ୍ରାମ: ${entry.village}`) },
         { text: runs(`ରାଜସ୍ୱ ମଣ୍ଡଳ: ${entry.circle}`), alignment: 'right' },
       ], margin: [0, 0, 0, 4] },
-      { text: runs(`ତହସିଲ: ${entry.tahasil}   ଉପଖଣ୍ଡ: ${entry.subdivision}   ଜିଲ୍ଲା: ${entry.district}`), margin: [0, 0, 0, 8] },
+      { text: runs(`ତହସିଲ: ${entry.tahasil}   ଉପଖଣ୍ଡ: ${entry.subdivision}   ଜିଲ୍ଲା: ${entry.district}`), margin: [0, 0, 0, 6] },
+      { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.7, lineColor: '#536673' }], margin: [0, 0, 0, 10] },
       item(1, 'କ୍ରମିକ ସଂଖ୍ୟା', entry.serial ? odiaNumbers(gSerial(entry)) : '— (ପୂର୍ବାବଲୋକନ)'),
       item(2, 'ବେଆଇନ ଦଖଲକାରୀଙ୍କ ନାମ ଓ ସମ୍ପୂର୍ଣ୍ଣ ଠିକଣା', `${entry.name} / ପିତା: ${entry.father} / ${entry.address}`),
       item(3, 'ଦଖଲକାରୀ ତଫସିଲଭୁକ୍ତ ଜାତି କିମ୍ବା ଉପଜାତି ଅଟନ୍ତି କି', localValue(entry.category)),
       item(4, 'ବେଆଇନ ଭାବେ ଦଖଲ କରାଯାଇଥିବା ଜମିର ବିବରଣୀ'),
       { table: { headerRows: 1, dontBreakRows: true, widths: ['*', '*', '*', '*', '*', '*'], body: [
         ['ମୌଜା', 'ଖାତା ନଂ', 'ପ୍ଲଟ ନଂ', 'ମୋଟ ରକବା (ଏକର)', 'ଦଖଲ ରକବା (ଏକର)', 'କିସମ']
-          .map(label => ({ text: label, bold: true, fillColor: '#edf2f5' })),
+          .map(label => ({ text: label, bold: true, fillColor: '#e7eff4' })),
         [entry.village, entry.khata, entry.plot, entry.fullArea, entry.occupiedArea, entry.kisam].map(value => ({ text: runs(value) })),
-      ] }, layout: tableLayout, margin: [0, 0, 0, 8] },
+      ] }, layout: { ...tableLayout, paddingTop: () => 5, paddingBottom: () => 5 },
+        margin: [0, 0, 0, 10] },
       item(5, 'ଜବରଦଖଲ ଜମିର ଶ୍ରେଣୀ ବା ସଂରକ୍ଷିତ ବ୍ୟବହାର', entry.landClass),
       item(6, 'ବେଆଇନ ଦଖଲ ହୋଇଥିବା ଜମି କେଉଁ ଅଞ୍ଚଳରେ ଅଛି', localValue(entry.areaType)),
       item(7, 'ପୌରାଞ୍ଚଳ ବା ବିଜ୍ଞାପିତ ଅଞ୍ଚଳ ପାଇଁ ବିବରଣୀ', municipal
@@ -116,9 +121,9 @@ export function gFormDocument(entry: GEntry, signature?: string) {
       item(15, 'ମୌଜାର ଏକର ପ୍ରତି ନିର୍ଦ୍ଧାରିତ କର (ତାରମ)', entry.taram),
       item(16, 'ମୌଜାରେ ଜମା ଧାର୍ଯ୍ୟ ନଥିଲେ ପାର୍ଶ୍ୱବର୍ତ୍ତୀ ମୌଜାର ଏକର ପ୍ରତି କର', entry.comparable),
       item(17, 'ବେଆଇନ ଦଖଲ ଜମିର ନିର୍ଦ୍ଧାରିତ କରର ପରିମାଣ', entry.occupiedAssessment),
-      { unbreakable: true, stack: [
+      { unbreakable: true, margin: [0, 2, 0, 0], stack: [
         item(18, 'ରାଜସ୍ୱ ନିରୀକ୍ଷକଙ୍କ ମନ୍ତବ୍ୟ', localValue(entry.remarks)),
-        ...(signature ? [{ image: signature, fit: [125, 63], alignment: 'right', margin: [0, 4, 0, 2] }] : []),
+        ...(signature ? [{ image: signature, fit: [125, 53], alignment: 'right', margin: [0, 4, 0, 2] }] : []),
         { text: runs(entry.officer), alignment: 'right' },
         { text: `ରିପୋର୍ଟ ଦାଖଲକାରୀ ଅଧିକାରୀଙ୍କ ସ୍ୱାକ୍ଷର ଓ ତାରିଖ: ${dateLabel(entry.reportDate)}`, bold: true, alignment: 'right' },
       ] },

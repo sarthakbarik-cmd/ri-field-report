@@ -21,7 +21,7 @@ function emptyForm(profile: RIProfile): GForm {
     village: '', name: '', father: '', address: '', category: '',
     khata: '', plot: '', fullArea: '', occupiedArea: '', kisam: '', landClass: '',
     areaType: 'Rural', municipalHouse: '', municipalUse: '', municipalReserved: '',
-    landless: '', ownLand: '', familyLand: '', homestead: '', income: '', occupation: '',
+    landless: '', ownLand: 'N/A', familyLand: 'N/A', homestead: 'N/A', income: '', occupation: '',
     inspectionDate: dispatchDate(), previousCase: 'N/A', taram: '', comparable: 'N/A', occupiedAssessment: '',
     remarks: 'May be evicted', officer: profile.riName || 'Revenue Inspector',
   };
@@ -36,6 +36,14 @@ interface FieldProps {
 }
 
 const yesNo = ['Yes', 'No', 'Not verified'];
+const landClasses = ['ପତିତ', 'ଉନ୍ନୟନ ଯୋଜନାଯୋଗ୍ୟ', 'ବସତିଯୋଗ୍ୟ', 'ଜଙ୍ଗଲ', 'ଗୋଚର', 'ନଦୀବନ୍ଧ', 'ରାସ୍ତା',
+  'କେନାଲ', 'ରକ୍ଷିତ', 'ସର୍ବସାଧାରଣ', 'ମନ୍ଦିର ସ୍ଥଳ', 'ଅନ୍ୟାନ୍ୟ'];
+const landHoldingFields = [
+  { field: 'ownLand', label: 'Own land excluding homestead (acres)' },
+  { field: 'familyLand', label: 'Family land in common mess (acres)' },
+  { field: 'homestead', label: 'Own homestead (acres)' },
+] as const satisfies readonly FieldProps[];
+const acreageOrNA = /^(?:n\/?a|\d+(?:\.\d*)?|\.\d+)$/i;
 const groups: { name: string; fields: FieldProps[] }[] = [
   { name: 'Office and inspection', fields: [
     { field: 'circle', label: 'RI circle' }, { field: 'tahasil', label: 'Tahasil' },
@@ -50,7 +58,7 @@ const groups: { name: string; fields: FieldProps[] }[] = [
     { field: 'village', label: 'Village / Mouza' }, { field: 'khata', label: 'Khata / holding no.' },
     { field: 'plot', label: 'Plot no.' }, { field: 'kisam', label: 'Kisam' },
     { field: 'fullArea', label: 'Full plot area (acres)', kind: 'number' }, { field: 'occupiedArea', label: 'Occupied area (acres)', kind: 'number' },
-    { field: 'landClass', label: 'Class or reserved use of land' },
+    { field: 'landClass', label: 'Class or reserved use of land', options: landClasses },
     { field: 'areaType', label: 'Area type', options: ['Rural', 'Municipality', 'Notified area', 'Urban'] },
   ] },
   { name: 'Enquiry and assessment', fields: [
@@ -72,6 +80,7 @@ export function EncroachmentModule({ profile, onSignatures }: { profile: RIProfi
   const currentYear = financialYear(today);
   const [year, setYear] = useState(currentYear);
   const [form, setForm] = useState(() => emptyForm(profile));
+  const [otherLandClass, setOtherLandClass] = useState('');
   const [id, setId] = useState(() => crypto.randomUUID());
   const [next, setNext] = useState<number>();
   const [start, setStart] = useState('');
@@ -118,7 +127,11 @@ export function EncroachmentModule({ profile, onSignatures }: { profile: RIProfi
   // Prefer the village rate. Use a numeric comparable rate only if Taram is unavailable.
   const rate = form.taram.trim();
   const assessment = occupiedLandAssessment(!rate || /^n\/?a$/i.test(rate) ? form.comparable : rate, form.occupiedArea);
-  const finalizedForm = { ...form, occupiedAssessment: assessment };
+  const finalizedForm = {
+    ...form,
+    landClass: form.landClass === 'ଅନ୍ୟାନ୍ୟ' ? otherLandClass.trim() : form.landClass,
+    occupiedAssessment: assessment,
+  };
   const municipal = /^(Municipality|Notified area)$/.test(form.areaType);
   function field({ field, label, options, kind, optional }: FieldProps) {
     const props = {
@@ -144,6 +157,10 @@ export function EncroachmentModule({ profile, onSignatures }: { profile: RIProfi
       form.occupation, form.previousCase, form.remarks];
     if (requiredText.some(value => !value.trim())) return setNotice('Fill all required details before signing.');
     if (+form.occupiedArea <= 0 || +form.occupiedArea > +form.fullArea) return setNotice('Occupied area must be positive and cannot exceed the full plot area.');
+    if (form.landClass === 'ଅନ୍ୟାନ୍ୟ' && !otherLandClass.trim()) return setNotice('Specify the other class or reserved use of land.');
+    if (form.landless === 'No' && landHoldingFields.some(({ field }) => !acreageOrNA.test(form[field].trim()))) {
+      return setNotice('Enter acreage or N/A in each of the three landholding fields.');
+    }
     if (!assessment) return setNotice('Enter a numeric Taram or comparable rate and the occupied acreage to calculate the assessment.');
     setNotice('');
     setConfirming(true);
@@ -158,6 +175,7 @@ export function EncroachmentModule({ profile, onSignatures }: { profile: RIProfi
       setFollowUp(entry.followUp);
       setConfirming(false);
       setForm(emptyForm(profile));
+      setOtherLandClass('');
       setId(crypto.randomUUID());
       try {
         const pdfParts = entry.pdfParts || await archiveGForm(uid, entry);
@@ -183,6 +201,10 @@ export function EncroachmentModule({ profile, onSignatures }: { profile: RIProfi
         {groups.map(group => <section key={group.name} className="rounded-lg border border-slate-200 p-3">
           <h3 className="mb-2 font-semibold">{group.name}</h3>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{group.fields.map(field)}</div>
+          {group.name === 'Plot details' && form.landClass === 'ଅନ୍ୟାନ୍ୟ' && <label className="mt-3 block">
+            Specify land class or reserved use
+            <input className={input} value={otherLandClass} required onChange={event => setOtherLandClass(event.target.value)} />
+          </label>}
           {group.name === 'Plot details' && municipal && <div className="mt-3 grid gap-3 sm:grid-cols-3">
             {field({ field: 'municipalHouse', label: 'House/site owned in this area?', options: yesNo })}
             {field({ field: 'municipalUse', label: 'Adjacent land needed for holding or residence?', options: yesNo })}
@@ -190,9 +212,7 @@ export function EncroachmentModule({ profile, onSignatures }: { profile: RIProfi
           </div>}
           {group.name === 'Enquiry and assessment' && <p className="mt-2 text-sm text-slate-700">Assessment = rate per acre × occupied acres. The comparable rate applies when Taram is unavailable.</p>}
           {group.name === 'Enquiry and assessment' && form.landless === 'No' && <div className="mt-3 grid gap-3 sm:grid-cols-3">
-            {field({ field: 'ownLand', label: 'Own land excluding homestead (acres)', kind: 'number' })}
-            {field({ field: 'familyLand', label: 'Family land in common mess (acres)', kind: 'number' })}
-            {field({ field: 'homestead', label: 'Own homestead (acres)', kind: 'number' })}
+            {landHoldingFields.map(field)}
           </div>}
         </section>)}
       </fieldset>
