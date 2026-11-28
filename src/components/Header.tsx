@@ -1,13 +1,10 @@
 import React, { useState } from 'react';
+import { modules } from '../modules';
 import {
-  FileText,
   PlusCircle,
   LayoutDashboard,
   Languages,
-  FileCode,
-  Shield,
   Layers,
-  Sparkles,
   Cloud,
   CloudOff,
   LogOut,
@@ -49,142 +46,54 @@ export const Header: React.FC<HeaderProps> = ({
   const [showModuleMenu, setShowModuleMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
 
-  const getModuleLabel = (mod: ModuleType) => {
-    switch (mod) {
-      case 'HOME':
-        return language === 'or' ? 'ମୁଖ୍ୟ ପୃଷ୍ଠା (Dashboard)' : 'Home Portal';
-      case 'KHANA_2':
-        return language === 'or' ? 'ଖାନା-୨ ସଂଶୋଧନ' : 'Khana-2 Correction';
-      case 'ENCROACHMENT':
-        return 'G Form & Register IV';
-      case 'DISPATCH':
-        return 'Dispatch & Letters';
-      case 'COLUMN_2_CAMP':
-        return language === 'or' ? 'ଖାନା-୨ କ୍ୟାମ୍ପ (Annexure-II)' : 'Column 2 Camp (Annexure-II)';
-      case 'FARMER_VERIFICATION':
-        return language === 'or' ? 'କୃଷକ ବଂଶାବଳୀ ଓ ଜମି ଭାଗ' : 'Farmer Land Share (PPAS)';
-      case 'LEGAL_HEIR_ENQUIRY':
-        return language === 'or' ? 'ଉତ୍ତରାଧିକାରୀ ତଦନ୍ତ' : 'Legal Heir Certificate Enquiry';
-      case 'DISASTER_MANAGEMENT':
-        return language === 'or' ? 'ବିପର୍ଯ୍ୟୟ ଓ ଗୃହ କ୍ଷତିଗ୍ରସ୍ତ ତଦନ୍ତ' : 'Disaster House Damage & Relief';
-    }
+  const homeLabel = language === 'or' ? 'ମୁଖ୍ୟ ପୃଷ୍ଠା' : 'Home';
+  const currentModule = modules.find(module => module.id === activeModule);
+  const goHome = () => {
+    setShowModuleMenu(false);
+    setShowUserMenu(false);
+    onGoToDashboard();
   };
 
   return (
-    <header className="h-14 bg-[#1E40AF] text-white flex items-center justify-between px-3 sm:px-6 shadow-md z-40 sticky top-0 print:hidden">
-      {/* Left Brand & Module Switcher */}
-      <div className="flex items-center gap-3">
-        <div
-          className="flex items-center gap-2.5 cursor-pointer"
-          onClick={onGoToDashboard}
-        >
-          <div className="w-8 h-8 bg-white/20 rounded flex items-center justify-center font-bold text-sm text-white shadow-sm border border-white/20">
-            OR
-          </div>
-          <div className="flex flex-col">
-            <h1 className="text-xs sm:text-sm font-bold tracking-tight leading-tight">
-              {language === 'or'
-                ? 'ଓଡ଼ିଶା ରାଜସ୍ୱ ଓ ବିପର୍ଯ୍ୟୟ ପରିଚାଳନା ପୋର୍ଟାଲ'
-                : 'Odisha Revenue & Field Operations Portal'}
-            </h1>
-            <span className="text-[10px] text-amber-300 font-medium opacity-90 hidden sm:block">
-              Cloud Synced Suite for Revenue Inspectors & Field Officers
-            </span>
-          </div>
-        </div>
-
-        {/* Module Switcher Dropdown */}
-        <div className="relative hidden md:block">
-          <button
-            onClick={() => setShowModuleMenu(!showModuleMenu)}
-            className="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-blue-900/80 hover:bg-blue-950 border border-blue-400/40 text-xs font-semibold transition"
+    <header className="sticky top-0 z-40 flex min-h-14 items-center justify-between gap-2 bg-[#142843] px-2 py-2 text-white shadow-md sm:px-6 print:hidden">
+      <nav aria-label="Main navigation" className="flex min-w-0 items-center gap-2 sm:gap-3">
+        <button type="button" onClick={goHome} aria-label="RI Field Report home"
+          className="flex shrink-0 items-center gap-2 rounded-md p-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">
+          <img src={import.meta.env.BASE_URL + 'ri-field-report.png'} alt="" width={36} height={36} className="rounded-lg" />
+          <span className="hidden whitespace-nowrap text-sm font-bold md:inline">RI Field Report</span>
+        </button>
+        <button type="button" onClick={goHome} aria-current={activeModule === 'HOME' ? 'page' : undefined}
+          className="flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg px-2 text-sm font-semibold hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">
+          <LayoutDashboard aria-hidden="true" className="h-4 w-4" />
+          {homeLabel}
+        </button>
+        <div className="relative min-w-0">
+          <button type="button" onClick={() => setShowModuleMenu(!showModuleMenu)}
+            aria-label={currentModule ? 'Switch workspace: ' + currentModule.title : 'Choose workspace'}
+            aria-expanded={showModuleMenu}
+            aria-controls="workspace-menu"
+            className="flex min-h-9 max-w-full items-center gap-1 rounded-lg border border-white/25 px-2 text-sm font-medium hover:bg-white/15"
           >
-            <Layers className="w-3.5 h-3.5 text-amber-300" />
-            <span>{getModuleLabel(activeModule)}</span>
-            <ChevronDown className="w-3 h-3 text-blue-200" />
+            <Layers aria-hidden="true" className="h-4 w-4 shrink-0" />
+            <span className="hidden truncate lg:inline">{currentModule ? (language === 'or' ? currentModule.odia : currentModule.title) : 'Workspaces'}</span>
+            <ChevronDown aria-hidden="true" className="h-3 w-3 shrink-0" />
           </button>
-
           {showModuleMenu && (
-            <div className="absolute left-0 mt-1 w-56 bg-white rounded-xl shadow-xl border border-slate-200 py-1 text-slate-800 text-xs font-semibold z-50">
-              <button
-                onClick={() => {
-                  onSelectModule('KHANA_2');
-                  setShowModuleMenu(false);
-                }}
-                className={`w-full text-left px-3 py-2 hover:bg-blue-50 flex items-center justify-between ${
-                  activeModule === 'KHANA_2' ? 'text-blue-600 bg-blue-50/50' : ''
-                }`}
-              >
-                <span>ଖାନା-୨ ସଂଶୋଧନ (Khana-2)</span>
-                {activeModule === 'KHANA_2' && <span className="w-2 h-2 rounded-full bg-blue-600"></span>}
-              </button>
-
-              <button
-                onClick={() => {
-                  onSelectModule('COLUMN_2_CAMP');
-                  setShowModuleMenu(false);
-                }}
-                className={`w-full text-left px-3 py-2 hover:bg-indigo-50 flex items-center justify-between ${
-                  activeModule === 'COLUMN_2_CAMP' ? 'text-indigo-700 bg-indigo-50/50' : ''
-                }`}
-              >
-                <span>ଖାନା-୨ କ୍ୟାମ୍ପ (Column 2 Camp · Annx-II)</span>
-                {activeModule === 'COLUMN_2_CAMP' && <span className="w-2 h-2 rounded-full bg-indigo-600"></span>}
-              </button>
-
-              <button type="button" onClick={() => { onSelectModule('ENCROACHMENT'); setShowModuleMenu(false); }}
-                className="flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-indigo-50">
-                G Form &amp; Register IV
-              </button>
-              <button type="button" onClick={() => { onSelectModule('DISPATCH'); setShowModuleMenu(false); }}
-                className="flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-indigo-50">
-                Dispatch &amp; Letters
-              </button>
-              <button
-                onClick={() => {
-                  onSelectModule('FARMER_VERIFICATION');
-                  setShowModuleMenu(false);
-                }}
-                className={`w-full text-left px-3 py-2 hover:bg-emerald-50 flex items-center justify-between ${
-                  activeModule === 'FARMER_VERIFICATION' ? 'text-emerald-600 bg-emerald-50/50' : ''
-                }`}
-              >
-                <span>କୃଷକ ବଂଶାବଳୀ ଓ ଜମି ଭାଗ (PPAS)</span>
-                {activeModule === 'FARMER_VERIFICATION' && <span className="w-2 h-2 rounded-full bg-emerald-600"></span>}
-              </button>
-
-              <button
-                onClick={() => {
-                  onSelectModule('LEGAL_HEIR_ENQUIRY');
-                  setShowModuleMenu(false);
-                }}
-                className={`w-full text-left px-3 py-2 hover:bg-amber-50 flex items-center justify-between ${
-                  activeModule === 'LEGAL_HEIR_ENQUIRY' ? 'text-amber-700 bg-amber-50/50' : ''
-                }`}
-              >
-                <span>ଉତ୍ତରାଧିକାରୀ ପ୍ରମାଣପତ୍ର ତଦନ୍ତ (Legal Heir)</span>
-                {activeModule === 'LEGAL_HEIR_ENQUIRY' && <span className="w-2 h-2 rounded-full bg-amber-600"></span>}
-              </button>
-
-              <button
-                onClick={() => {
-                  onSelectModule('DISASTER_MANAGEMENT');
-                  setShowModuleMenu(false);
-                }}
-                className={`w-full text-left px-3 py-2 hover:bg-rose-50 flex items-center justify-between ${
-                  activeModule === 'DISASTER_MANAGEMENT' ? 'text-rose-700 bg-rose-50/50' : ''
-                }`}
-              >
-                <span>ବିପର୍ଯ୍ୟୟ ଓ ଗୃହ କ୍ଷତିଗ୍ରସ୍ତ ତଦନ୍ତ (Disaster Relief)</span>
-                {activeModule === 'DISASTER_MANAGEMENT' && <span className="w-2 h-2 rounded-full bg-rose-600"></span>}
-              </button>
+            <div id="workspace-menu" className="fixed inset-x-2 top-14 mt-2 rounded-xl border border-slate-200 bg-white p-1 text-sm text-slate-800 shadow-xl sm:absolute sm:left-0 sm:right-auto sm:top-full sm:w-60">
+              {modules.map(module => (
+                <button type="button" key={module.id} aria-current={activeModule === module.id ? 'page' : undefined}
+                  onClick={() => { setShowModuleMenu(false); onSelectModule(module.id); }}
+                  className={`block w-full rounded-lg px-3 py-2 text-left hover:bg-blue-50 ${activeModule === module.id ? 'bg-blue-50 font-semibold text-blue-900' : ''}`}>
+                  {language === 'or' ? module.odia : module.title}
+                </button>
+              ))}
             </div>
           )}
         </div>
-      </div>
+      </nav>
 
       {/* Right Controls & Auth Profile */}
-      <div className="flex items-center gap-2 sm:gap-3">
+      <div className="flex shrink-0 items-center gap-1 sm:gap-3">
         {/* Cloud Sync Status Indicator */}
         <div className="hidden lg:flex items-center space-x-1.5 px-2 py-0.5 rounded-full bg-white/10 text-[11px] font-medium">
           {isCloudSynced ? (
@@ -207,7 +116,7 @@ export const Header: React.FC<HeaderProps> = ({
           title="Toggle Language"
         >
           <Languages className="w-3.5 h-3.5 text-amber-300" />
-          <span>{language === 'en' ? 'ଓଡ଼ିଆ' : 'Eng'}</span>
+          <span className="hidden min-[380px]:inline">{language === 'en' ? 'ଓଡ଼ିଆ' : 'Eng'}</span>
         </button>
 
         {/* New Case Button */}

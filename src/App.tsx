@@ -159,6 +159,7 @@ export default function App() {
     }
     setActiveModule(mod);
     setCurrentView('dashboard');
+    window.scrollTo(0, 0);
   };
 
   return (
@@ -173,10 +174,7 @@ export default function App() {
         riProfile={riProfile}
         onToggleLanguage={() => setLanguage(language === 'en' ? 'or' : 'en')}
         onNewCase={handleNewCase}
-        onGoToDashboard={() => {
-          setCurrentView('dashboard');
-          refreshCases();
-        }}
+        onGoToDashboard={() => handleSelectModule('HOME')}
         onOpenAILog={activeCase ? () => setShowAILogModal(true) : undefined}
         onOpenRIProfile={() => setShowRIProfileModal(true)}
       />

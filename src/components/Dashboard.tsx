@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { modules } from '../modules';
 import {
   PlusCircle,
   FileText,
@@ -8,17 +9,13 @@ import {
   Building2,
   Users,
   MapPin,
-  Sparkles,
   Cloud,
   RefreshCw,
-  TreeDeciduous,
-  ArrowRight,
   UserCheck,
   ChevronRight,
   ShieldCheck,
   Edit3,
   LayoutGrid,
-  CloudRain,
 } from 'lucide-react';
 import {
   CaseData,
@@ -265,252 +262,29 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </div>
 
-        {/* ==================== 2. THE 3 ACTIVE SERVICE MODULE CARDS ==================== */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between px-1">
-            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-blue-600" />
-              <span>Select Service Module to Open Dedicated Workspace</span>
-            </h2>
-            <span className="text-xs text-slate-500 font-medium">
-              Total {totalAllCases} active statutory records
-            </span>
+        <section aria-labelledby="workspace-heading" className="space-y-4">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 id="workspace-heading" className="text-xl font-bold text-slate-900">Workspaces</h2>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-            
-            <button
-              type="button"
-              onClick={() => onSelectModule('DISPATCH')}
-              className="flex flex-col items-start gap-4 rounded-2xl border-2 border-indigo-200 bg-white p-5 text-left shadow-sm transition hover:border-indigo-500 hover:shadow-md sm:p-6"
-            >
-              <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700">
-                <FileText aria-hidden="true" className="h-6 w-6" />
-              </span>
-              <span className="text-lg font-bold text-slate-900">Dispatch &amp; Letters</span>
-              <span className="text-sm text-slate-600">Draft letters, reply to received memos, and view the annual dispatch register.</span>
-            </button>
-
-            <button type="button" onClick={() => onSelectModule('ENCROACHMENT')}
-              className="flex flex-col items-start gap-4 rounded-2xl border-2 border-indigo-200 bg-white p-5 text-left shadow-sm transition hover:border-indigo-500 hover:shadow-md sm:p-6">
-              <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700">
-                <FileText aria-hidden="true" className="h-6 w-6" />
-              </span>
-              <span className="text-lg font-bold text-slate-900">G Form &amp; Register IV</span>
-              <span className="text-sm text-slate-600">Issue signed encroachment reports and export the register.</span>
-            </button>
-
-            {/* CARD 1: KHANA-2 (COLUMN 2) */}
-            <div
-              onClick={() => onSelectModule('KHANA_2')}
-              className="bg-white border-2 border-blue-200 hover:border-blue-500 rounded-2xl p-5 sm:p-6 transition shadow-sm hover:shadow-md cursor-pointer flex flex-col justify-between group relative overflow-hidden"
-            >
-              <div className="space-y-4">
-                <div className="flex items-start justify-between">
-                  <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
-                    <FileText className="w-6 h-6" />
-                  </div>
-                  <span className="px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-full text-xs font-extrabold font-mono tabular-nums">
-                    {cases.length} Cases
-                  </span>
-                </div>
-
-                <div>
-                  <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">
-                    Module 1 • RoR Records
-                  </span>
-                  <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-blue-700 transition">
-                    ଖାନା-୨ ସ୍ୱତ୍ତ୍ୱଲିପି ସଂଶୋଧନ
-                  </h3>
-                  <p className="text-xs text-slate-500 font-medium">Khana-2 (Column 2) Inquiries & Corrections</p>
-                </div>
-
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Extract RoR data from PDFs, map offline deceased tenants, record field inquiries, compute legal heir branch shares, and generate consolidated correction reports.
-                </p>
-              </div>
-
-              <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between">
-                <div className="text-xs text-slate-500 tabular-nums">
-                  <strong className="text-slate-900 font-bold">{cases.filter((c) => c.status === 'Completed').length}</strong> Done • <strong className="text-slate-900 font-bold">{cases.filter((c) => c.status === 'Draft').length}</strong> Draft
-                </div>
-                <div className="text-xs font-bold text-blue-700 flex items-center space-x-1 group-hover:translate-x-1 transition">
-                  <span>Open Workspace</span>
-                  <ArrowRight className="w-4 h-4" />
-                </div>
-              </div>
-            </div>
-
-            {/* CARD 2: COLUMN 2 CAMP (ANNEXURE-II FIELD INFORMATION COLLECTION) */}
-            <div
-              onClick={() => onSelectModule('COLUMN_2_CAMP')}
-              className="bg-white border-2 border-indigo-200 hover:border-indigo-500 rounded-2xl p-5 sm:p-6 transition shadow-sm hover:shadow-md cursor-pointer flex flex-col justify-between group relative overflow-hidden"
-            >
-              <div className="space-y-4">
-                <div className="flex items-start justify-between">
-                  <div className="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">
-                    <FileText className="w-6 h-6" />
-                  </div>
-                  <span className="px-3 py-1 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-full text-xs font-extrabold font-mono tabular-nums">
-                    {column2CampRecords.length} Records
-                  </span>
-                </div>
-
-                <div>
-                  <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">
-                    Column 2 Camp • Annexure-II
-                  </span>
-                  <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-indigo-700 transition">
-                    ଖାନା-୨ କ୍ୟାମ୍ପ (Annexure-II)
-                  </h3>
-                  <p className="text-xs text-slate-500 font-medium">Field Genealogy, Heir Mobile &amp; Aadhaar Info</p>
-                </div>
-
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Collect readable Annexure-II family trees and heir Mobile &amp; Aadhaar information in the field for printing and Annexure-III entry (signatures taken later at Annexure-III).
-                </p>
-              </div>
-
-              <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between">
-                <div className="text-xs text-indigo-700 font-medium tabular-nums">
-                  <strong className="font-bold">{column2CampRecords.filter((r) => r.status === 'Entered in Annexure-III' || r.annexure3Entered).length}</strong> Annx-III •{' '}
-                  <strong className="font-bold">
-                    {column2CampRecords.filter((r) => r.status === 'Info Collected' || r.status === 'Signed & Verified').length}
-                  </strong>{' '}
-                  Collected
-                </div>
-                <div className="text-xs font-bold text-indigo-700 flex items-center space-x-1 group-hover:translate-x-1 transition">
-                  <span>Open Camp</span>
-                  <ArrowRight className="w-4 h-4" />
-                </div>
-              </div>
-            </div>
-
-            {/* CARD 2: FARMER VERIFICATION / PPAS */}
-            <div
-              onClick={() => onSelectModule('FARMER_VERIFICATION')}
-              className="bg-white border-2 border-emerald-200 hover:border-emerald-500 rounded-2xl p-5 sm:p-6 transition shadow-sm hover:shadow-md cursor-pointer flex flex-col justify-between group relative overflow-hidden"
-            >
-              <div className="space-y-4">
-                <div className="flex items-start justify-between">
-                  <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
-                    <TreeDeciduous className="w-6 h-6" />
-                  </div>
-                  <span className="px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-xs font-extrabold font-mono">
-                    {farmerCases.length} Cases
-                  </span>
-                </div>
-
-                <div>
-                  <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">
-                    Module 2 • PPAS Procurement
-                  </span>
-                  <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-emerald-700 transition">
-                    କୃଷକ ବଂଶାବଳୀ ଓ ଜମି ଭାଗ
-                  </h3>
-                  <p className="text-xs text-slate-500 font-medium">Farmer Verification & Succession Share</p>
-                </div>
-
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Interactive multi-generational family tree genealogy builder with automatic succession math for paddy procurement (PACS / RMC) and bilingual certificate generation.
-                </p>
-              </div>
-
-              <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between">
-                <div className="text-xs text-emerald-700 font-medium">
-                  PACS / Statutory Verification
-                </div>
-                <div className="text-xs font-bold text-emerald-700 flex items-center space-x-1 group-hover:translate-x-1 transition">
-                  <span>Open Workspace</span>
-                  <ArrowRight className="w-4 h-4" />
-                </div>
-              </div>
-            </div>
-
-            {/* CARD 3: LEGAL HEIR CERTIFICATE ENQUIRY */}
-            <div
-              onClick={() => onSelectModule('LEGAL_HEIR_ENQUIRY')}
-              className="bg-white border-2 border-amber-200 hover:border-amber-500 rounded-2xl p-5 sm:p-6 transition shadow-sm hover:shadow-md cursor-pointer flex flex-col justify-between group relative overflow-hidden"
-            >
-              <div className="space-y-4">
-                <div className="flex items-start justify-between">
-                  <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold">
-                    <UserCheck className="w-6 h-6" />
-                  </div>
-                  <span className="px-3 py-1 bg-amber-50 text-amber-800 border border-amber-200 rounded-full text-xs font-extrabold font-mono">
-                    {legalHeirCases.length} Cases
-                  </span>
-                </div>
-
-                <div>
-                  <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">
-                    Module 3 • Statutory Enquiry
-                  </span>
-                  <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-amber-700 transition">
-                    ଉତ୍ତରାଧିକାରୀ ପ୍ରମାଣପତ୍ର ତଦନ୍ତ
-                  </h3>
-                  <p className="text-xs text-slate-500 font-medium">Legal Heir Certificate Enquiry of R.I.</p>
-                </div>
-
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Field enquiry report of R.I. with applicant mobile, death certificate verification, RoR land details, interactive genealogy tree, and auto-generated statutory report in official Odia & English.
-                </p>
-              </div>
-
-              <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between">
-                <div className="text-xs text-amber-800 font-medium">
-                  {legalHeirCases.filter((c) => c.status === 'Report Generated').length} Generated • {legalHeirCases.filter((c) => c.status === 'Draft').length} Draft
-                </div>
-                <div className="text-xs font-bold text-amber-800 flex items-center space-x-1 group-hover:translate-x-1 transition">
-                  <span>Open Workspace</span>
-                  <ArrowRight className="w-4 h-4" />
-                </div>
-              </div>
-            </div>
-
-            {/* CARD 4: DISASTER MANAGEMENT & HOUSE DAMAGE VERIFICATION */}
-            <div
-              onClick={() => onSelectModule('DISASTER_MANAGEMENT')}
-              className="bg-white border-2 border-rose-200 hover:border-rose-500 rounded-2xl p-5 sm:p-6 transition shadow-sm hover:shadow-md cursor-pointer flex flex-col justify-between group relative overflow-hidden"
-            >
-              <div className="space-y-4">
-                <div className="flex items-start justify-between">
-                  <div className="w-12 h-12 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold">
-                    <CloudRain className="w-6 h-6" />
-                  </div>
-                  <span className="px-3 py-1 bg-rose-50 text-rose-700 border border-rose-200 rounded-full text-xs font-extrabold font-mono">
-                    {disasterRecords.length} Damaged
-                  </span>
-                </div>
-
-                <div>
-                  <span className="text-[10px] font-bold text-rose-600 uppercase tracking-wider">
-                    Module 4 • Disaster Relief
-                  </span>
-                  <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-rose-700 transition">
-                    ବିପର୍ଯ୍ୟୟ ଓ ଗୃହ କ୍ଷତିଗ୍ରସ୍ତ ତଦନ୍ତ
-                  </h3>
-                  <p className="text-xs text-slate-500 font-medium">Disaster House Damage & Relief</p>
-                </div>
-
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Heavy rain damage verification, WhatsApp intake parser, direct mobile camera with watermarked photo evidence, polythene relief tracking, and Excel matrix generation.
-                </p>
-              </div>
-
-              <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between">
-                <div className="text-xs text-rose-700 font-medium">
-                  {disasterRecords.filter((d) => d.polythene === 'YES').length} Polythene • {disasterRecords.filter((d) => d.financialAssistance === 'YES').length} SDRF Aid
-                </div>
-                <div className="text-xs font-bold text-rose-700 flex items-center space-x-1 group-hover:translate-x-1 transition">
-                  <span>Open Workspace</span>
-                  <ArrowRight className="w-4 h-4" />
-                </div>
-              </div>
-            </div>
-
+          <div className="grid auto-rows-fr grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {modules.map(({ id, icon: Icon, title, odia, description }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => onSelectModule(id)}
+                className="group flex h-full min-w-0 flex-col items-start rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-blue-400 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
+              >
+                <span className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-800">
+                  <Icon aria-hidden="true" className="h-5 w-5" />
+                </span>
+                <span className="text-base font-bold leading-snug text-slate-900">{title}</span>
+                <span lang="or" className="mt-1 text-sm text-slate-600">{odia}</span>
+                <span className="mt-3 text-sm leading-relaxed text-slate-700">{description}</span>
+                <span className="mt-auto pt-4 text-sm font-semibold text-blue-800 group-hover:underline">Open workspace</span>
+              </button>
+            ))}
           </div>
-        </div>
+        </section>
 
         {/* ==================== 3. SYSTEM STATS & QUICK ACCESS ==================== */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
