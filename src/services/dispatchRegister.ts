@@ -1,3 +1,4 @@
+import type { DocumentReference } from 'firebase/firestore';
 import { Bytes, collection, doc, getDoc, onSnapshot, runTransaction, serverTimestamp, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
@@ -103,9 +104,12 @@ export async function readIssuedSignature(uid: string, entry: DispatchEntry) {
 const partSize = 700_000;
 const maxPdfSize = 6_000_000;
 
-export async function saveDispatchPdf(uid: string, entry: DispatchEntry, pdf: Uint8Array) {
+export function saveDispatchPdf(uid: string, entry: DispatchEntry, pdf: Uint8Array) {
+  return saveArchivedPdf(entryRef(uid, entry), pdf);
+}
+
+export async function saveArchivedPdf(ref: DocumentReference, pdf: Uint8Array) {
   if (!pdf.length || pdf.length > maxPdfSize) throw new Error('The generated PDF exceeds the 6 MB archive limit.');
-  const ref = entryRef(uid, entry);
   return runTransaction(db, async transaction => {
     const snapshot = await transaction.get(ref);
     if (!snapshot.exists()) throw new Error('The dispatch entry is unavailable.');
@@ -121,19 +125,26 @@ export async function saveDispatchPdf(uid: string, entry: DispatchEntry, pdf: Ui
   });
 }
 
-export async function downloadDispatchPdf(uid: string, entry: DispatchEntry) {
-  if (!entry.pdfParts) throw new Error('The PDF is pending.');
-  const ref = entryRef(uid, entry);
-  const parts = await Promise.all(Array.from({ length: entry.pdfParts }, async (_, index) => {
+export function downloadDispatchPdf(uid: string, entry: DispatchEntry) {
+  return downloadArchivedPdf(entryRef(uid, entry), entry.pdfParts, `Letter-${entry.date.slice(0, 4)}-${entry.number}.pdf`);
+}
+
+export async function downloadArchivedPdf(ref: DocumentReference, count: number | undefined, filename: string) {
+  if (!count) throw new Error('The PDF is pending.');
+  const parts = await Promise.all(Array.from({ length: count }, async (_, index) => {
     const snapshot = await getDoc(doc(ref, 'files', `pdf-${index}`));
     const bytes = snapshot.get('bytes') as Bytes | undefined;
     if (!bytes) throw new Error('The archived PDF is incomplete.');
     return new Uint8Array(bytes.toUint8Array());
   }));
-  const url = URL.createObjectURL(new Blob(parts, { type: 'application/pdf' }));
+  downloadFile(new Blob(parts, { type: 'application/pdf' }), filename);
+}
+
+export function downloadFile(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `Letter-${entry.date.slice(0, 4)}-${entry.number}.pdf`;
+  link.download = filename;
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 30_000);
 }

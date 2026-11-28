@@ -35,7 +35,7 @@ function loadFonts() {
   return fontsReady;
 }
 
-function runs(text: string) {
+export function runs(text: string) {
   return text.split(/(\*\*[^*]+\*\*)/u).flatMap(fragment => {
     const bold = fragment.startsWith('**') && fragment.endsWith('**');
     const value = bold ? fragment.slice(2, -2) : fragment;
@@ -108,6 +108,11 @@ export function dispatchDocument(entry: DispatchEntry, emblem: string, signature
 }
 
 export async function renderDispatchPdf(entry: DispatchEntry, signature?: string): Promise<Uint8Array> {
-  const [, emblem] = await Promise.all([loadFonts(), assetDataUrl(dispatchEmblem)]);
-  return new Uint8Array(await pdfMake.createPdf(dispatchDocument(entry, emblem, signature)).getBuffer());
+  const emblem = await assetDataUrl(dispatchEmblem);
+  return renderTextPdf(dispatchDocument(entry, emblem, signature));
+}
+
+export async function renderTextPdf(document: object): Promise<Uint8Array> {
+  await loadFonts();
+  return new Uint8Array(await pdfMake.createPdf(document).getBuffer());
 }

@@ -1,3 +1,4 @@
+import { EncroachmentModule } from './components/modules/EncroachmentModule';
 import { DispatchModule } from './components/modules/DispatchModule';
 import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
@@ -31,7 +32,7 @@ import { ArrowLeft, Printer } from 'lucide-react';
 
 export default function App() {
   const { user, loading } = useAuth();
-  const [activeModule, setActiveModule] = useState<ModuleType>(() => window.location.hash === '#dispatch' ? 'DISPATCH' : 'HOME');
+  const [activeModule, setActiveModule] = useState<ModuleType>(() => window.location.hash === '#dispatch' ? 'DISPATCH' : window.location.hash === '#g-form' ? 'ENCROACHMENT' : 'HOME');
   const [cases, setCases] = useState<CaseData[]>([]);
   const [activeCase, setActiveCase] = useState<CaseData | null>(null);
   const [currentView, setCurrentView] = useState<'dashboard' | 'workflow' | 'report'>('dashboard');
@@ -151,9 +152,9 @@ export default function App() {
   };
 
   const handleSelectModule = (mod: ModuleType) => {
-    if (mod === 'DISPATCH' || window.location.hash === '#dispatch') {
+    if (mod === 'DISPATCH' || mod === 'ENCROACHMENT' || ['#dispatch', '#g-form'].includes(window.location.hash)) {
       const url = new URL(window.location.href);
-      url.hash = mod === 'DISPATCH' ? 'dispatch' : '';
+      url.hash = mod === 'DISPATCH' ? 'dispatch' : mod === 'ENCROACHMENT' ? 'g-form' : '';
       window.history.replaceState(null, '', url);
     }
     setActiveModule(mod);
@@ -302,6 +303,9 @@ export default function App() {
         )}
 
         {/* COLUMN 2 CAMP: ANNEXURE-II FIELD COLLECTION & SIGNATURES */}
+        {activeModule === 'ENCROACHMENT' && !loading && <div key={user?.uid || 'guest'}>
+          <EncroachmentModule profile={riProfile} onSignatures={() => handleSelectModule('DISPATCH')} />
+        </div>}
         {activeModule === 'DISPATCH' && <div key={user?.uid || 'guest'}><DispatchModule profile={riProfile} /></div>}
 
         {activeModule === 'COLUMN_2_CAMP' && (

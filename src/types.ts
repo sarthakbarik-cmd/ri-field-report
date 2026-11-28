@@ -10,7 +10,8 @@ export type ModuleType =
   | 'LEGAL_HEIR_ENQUIRY'
   | 'DISASTER_MANAGEMENT'
   | 'COLUMN_2_CAMP'
-  | 'DISPATCH';
+  | 'DISPATCH'
+  | 'ENCROACHMENT';
 
 export interface UserProfile {
   uid: string;
