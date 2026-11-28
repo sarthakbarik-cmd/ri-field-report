@@ -71,6 +71,9 @@ const localValue = (value: string) => odiaValues[value] ?? value;
 
 export function gFormDocument(entry: GEntry, signature?: string) {
   if (entry.format !== 'odia') return legacyGFormDocument(entry, signature);
+  const reportMonth = odiaNumbers(new Intl.DateTimeFormat('or-IN', {
+    month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata',
+  }).format(new Date(entry.reportDate + 'T12:00:00+05:30')));
   const item = (n: number, label: string, value = '') => ({
     text: [...runs(`${odiaNumbers(String(n))}. ${label}:`).map(run => ({ ...run, bold: true })),
       ...runs(value ? '  ' + value : '')],
@@ -87,14 +90,11 @@ export function gFormDocument(entry: GEntry, signature?: string) {
     pageSize: 'A4', pageMargins: [40, 35, 40, 34], defaultStyle: { ...defaultStyle, font: 'Odia', fontSize: 11, lineHeight: 1.08 },
     info: { title: entry.serial ? `ଗ ଫରମ ${gSerial(entry)}` : 'ଗ ଫରମ' },
     content: [
-      { text: runs('ଫାରମ ସଂଖ୍ୟା – ‘G’'), fontSize: 18, bold: true, alignment: 'center', margin: [0, 0, 0, 3] },
+      { text: runs('ଫରମ ‘G’'), fontSize: 18, bold: true, alignment: 'center', margin: [0, 0, 0, 3] },
       { text: '[ନିୟମ ୩(୧) ଦ୍ରଷ୍ଟବ୍ୟ]', alignment: 'center', margin: [0, 1, 0, 4] },
-      { text: 'ସରକାରୀ ଜମିର ବେଆଇନ ଦଖଲ ସମ୍ବନ୍ଧୀୟ ବିବରଣୀ', bold: true, alignment: 'center', fontSize: 13, margin: [0, 0, 0, 12] },
-      { columns: [
-        { text: runs(`ଗ୍ରାମ: ${entry.village}`) },
-        { text: runs(`ରାଜସ୍ୱ ମଣ୍ଡଳ: ${entry.circle}`), alignment: 'right' },
-      ], margin: [0, 0, 0, 4] },
-      { text: runs(`ତହସିଲ: ${entry.tahasil}   ଉପଖଣ୍ଡ: ${entry.subdivision}   ଜିଲ୍ଲା: ${entry.district}`), margin: [0, 0, 0, 6] },
+      { text: 'ସରକାରୀ ଜମିର ବେଆଇନ ଦଖଲ ସମ୍ବନ୍ଧୀୟ ବିବରଣୀ', bold: true, alignment: 'center', fontSize: 13, margin: [0, 0, 0, 8] },
+      { text: runs(`ଗ୍ରାମ: ${entry.village}  |  ରାଜସ୍ୱ ମଣ୍ଡଳ: ${entry.circle}  |  ତହସିଲ: ${entry.tahasil}\nଉପଖଣ୍ଡ: ${entry.subdivision}  |  ଜିଲ୍ଲା: ${entry.district}  |  ରିପୋର୍ଟ ମାସ: ${reportMonth}`),
+        alignment: 'center', margin: [0, 0, 0, 6] },
       { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.7, lineColor: '#536673' }], margin: [0, 0, 0, 10] },
       item(1, 'କ୍ରମିକ ସଂଖ୍ୟା', entry.serial ? odiaNumbers(gSerial(entry)) : '— (ପୂର୍ବାବଲୋକନ)'),
       item(2, 'ବେଆଇନ ଦଖଲକାରୀଙ୍କ ନାମ ଓ ସମ୍ପୂର୍ଣ୍ଣ ଠିକଣା', `${entry.name} / ପିତା: ${entry.father} / ${entry.address}`),

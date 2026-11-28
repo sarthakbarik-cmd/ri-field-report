@@ -23,7 +23,7 @@ function emptyForm(profile: RIProfile): GForm {
     areaType: 'Rural', municipalHouse: '', municipalUse: '', municipalReserved: '',
     landless: '', ownLand: 'N/A', familyLand: 'N/A', homestead: 'N/A', income: '', occupation: '',
     inspectionDate: dispatchDate(), previousCase: 'N/A', taram: '', comparable: 'N/A', occupiedAssessment: '',
-    remarks: 'May be evicted', officer: profile.riName || 'Revenue Inspector',
+    remarks: 'ଅବରୋଧକାରୀଙ୍କ ଠାରୁ ଜମି ଜୋରିମାନା ଆଦାୟ କରାଯାଇ କେସଭୁକ୍ତ ବୃତ୍ତିରୁ ଅବରୋଧକାରୀଙ୍କୁ ଉଚ୍ଛେଦ କରାଯିବା ସହିତ ବିହିତ କାର୍ଯ୍ୟାନୁଷ୍ଠାନ ନିମନ୍ତେ ଜଣାଉଛି।', officer: profile.riName || 'Revenue Inspector',
   };
 }
 
